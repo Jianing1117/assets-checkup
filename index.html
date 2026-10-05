@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家庭资产配置体检｜Long Arc</title>
+<link rel="icon" href="assets/la-monogram-ink-sky.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@chinese-fonts/zqfs@3.0.0/dist/ZhuqueFangsong-Regular/result.css" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+<style>
+/* 体检工具：只补表单和结果需要的零件，其余沿用 site.css */
+body[data-p=tool] .two>*:nth-child(even){max-width:760px;min-width:0}
+.tool .stp{padding-top:clamp(72px,8cqw,112px)}
+.tool .stp:first-of-type{padding-top:clamp(88px,11cqw,150px)}
+.tool .h2+.p,.tool .h2+.s{margin-top:10px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:40px;font-size:14px}
+.bar button{font:inherit;background:none;border:0;padding:0;cursor:pointer}
+.fs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 36px;margin-top:30px}
+.fs.one{grid-template-columns:minmax(0,1fr)}
+.f{display:block;min-width:0}
+.f>span{display:block;font-size:14px;line-height:1.6}
+.f{display:flex;flex-direction:column}
+.f>em{display:block;order:3;margin-top:8px;font-style:normal;font-size:12.5px;line-height:1.6;color:var(--note)}
+.f .in{display:flex;align-items:baseline;gap:10px}
+.f .in .field{flex:1;min-width:0}
+.u{font-family:var(--label);letter-spacing:.14em;font-size:13px;color:var(--grey);white-space:nowrap}
+.field{font-variant-numeric:tabular-nums}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+select.field{-webkit-appearance:none;appearance:none;padding-right:18px;cursor:pointer;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%23A9AAAB' stroke-width='1.2'/></svg>") no-repeat right 2px center}
+textarea.field{resize:vertical;min-height:52px;line-height:1.75}
+.cbs{display:flex;flex-direction:column;gap:12px;margin-top:30px}
+.cb{display:inline-flex;align-items:baseline;gap:12px;font-size:15px;line-height:1.6;cursor:pointer}
+.cb input,.tb input[type=checkbox]{accent-color:var(--ink);width:15px;height:15px;transform:translateY(2px);cursor:pointer}
+/* 三档 */
+.opts{margin-top:26px}
+.opt{display:grid;grid-template-columns:52px minmax(0,1fr) auto;column-gap:20px;align-items:baseline;padding:16px 0;cursor:pointer}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .ck{display:inline-block;width:22px;height:8px;background:var(--stone);transition:width .6s var(--ease),background .6s var(--ease)}
+.opt .t{font-weight:500;font-size:18px;line-height:1.5;transition:transform .6s var(--ease)}
+.opt .s{margin-top:2px}
+.opt .r{white-space:nowrap;margin-top:0}
+.tool .s,.tool .p,.tool .lead,.f>em{text-wrap:pretty}
+.opt:hover .t{transform:translateX(6px)}
+.opt.on .ck{width:34px;background:var(--p)}
+.opt:not(.on) .t{color:#4a4b4d}
+.opt input:focus-visible~div .t{text-decoration:underline}
+/* 可增减的表 */
+.tb.ed{margin-top:26px;font-size:14.5px}
+.tb.ed th{border-bottom:0;padding-bottom:2px}
+.tb.ed td{padding:6px 14px 6px 0;vertical-align:baseline}
+.tb.ed td:first-child{font-weight:400;white-space:normal}
+.tb.ed .field{font-size:15px;padding:8px 0}
+.tb.ed td.c{text-align:center;padding-right:10px}
+.tb.ed th.c{text-align:center;padding-right:10px}
+.tb.ed td.x{width:28px;padding-right:0;text-align:right}
+.tb.ed tr:hover td{background:none}
+.del{font-family:var(--label);font-size:16px;color:var(--grey);background:none;border:0;cursor:pointer;transition:color .4s var(--ease)}
+.del:hover{color:var(--ink)}
+.add{margin-top:16px;font-size:14px;background:none;border:0;padding:0;cursor:pointer;font-family:inherit}
+.n0{font-size:13.5px;color:var(--note);margin-top:18px}
+.h3.grp{margin-top:64px;padding-top:0;border-top:0;display:block;width:auto}
+.tb.ed select.field{border-bottom-color:transparent}
+.h3.grp+.s{margin-top:4px}
+.ck2{display:inline-flex;gap:4px;margin-right:12px;vertical-align:middle}.ck2 .ckc{margin:0;width:14px}
+/* 结果 */
+.res .h2{margin-top:0}
+.out{margin-top:26px}
+.acc td:first-child{white-space:nowrap}
+.acc .ck,.ckc{display:inline-block;width:22px;height:8px;margin-right:12px;vertical-align:middle}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb td.num,.tb th.num{text-align:right}
+.tb.res-t td{padding:14px 18px 14px 0}
+.tb.res-t td:last-child,.tb.res-t th:last-child{padding-right:0}
+.big.sm{font-size:clamp(96px,12cqw,168px);margin-top:20px}
+[data-out]>.h3:first-child,[data-out]>.sub:first-child{margin-top:30px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:28px;row-gap:10px;margin-top:22px;font-size:15px;line-height:1.75}
+.kv dt{color:var(--note);white-space:nowrap}
+.kv dd{font-variant-numeric:tabular-nums}
+.todo{list-style:none;margin-top:22px;counter-reset:t}
+.todo li{display:grid;grid-template-columns:52px minmax(0,1fr);padding:12px 0;font-size:15.5px;line-height:1.85;counter-increment:t}
+.todo li::before{content:counter(t,decimal-leading-zero);font-family:var(--label);letter-spacing:.14em;font-size:14px;color:var(--ink-blue);padding-top:3px}
+.todo li.ok{color:var(--note)}
+.tipb{background:var(--pw);padding:20px 24px;margin-top:26px;font-size:15px;line-height:1.85}
+.tipb p+p{margin-top:8px}
+.tipb .lb{margin-bottom:6px}
+.cap{white-space:nowrap}
+.sub{margin-top:52px}
+.sub:first-child{margin-top:0}
+.h3+.s{margin-top:4px}
+.ips{list-style:none;margin-top:26px}
+.ips>li{display:grid;grid-template-columns:52px minmax(0,1fr);padding:14px 0}
+.ips>li>.lb{padding-top:4px}
+.ips .q{font-weight:500;font-size:16px;line-height:1.6}
+.ips .a{font-size:15px;line-height:1.85;margin-top:4px;text-wrap:pretty}
+.ips .a .field{font-size:15px}
+.ips .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 26px;margin-top:6px}
+.warn{color:var(--ink);font-size:14px;margin-top:8px}
+.warn::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--p);margin-right:10px;vertical-align:middle;box-shadow:0 0 0 1px rgba(23,23,23,.18)}
+.toast{position:fixed;left:50%;bottom:32px;transform:translate(-50%,12px);background:var(--ink);color:#fff;font-size:13.5px;padding:10px 20px;border-radius:24px;opacity:0;pointer-events:none;transition:all .6s var(--ease);z-index:50}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.end{margin-top:56px;font-size:13.5px;line-height:1.8;color:var(--note)}
+@container (max-width:760px){
+  .fs{grid-template-columns:minmax(0,1fr)}
+  .opt{grid-template-columns:44px minmax(0,1fr)}
+  .opt .r{grid-column:2;font-size:13px}
+  .tb.ed thead{display:none}
+  .tb.ed tr{display:block;padding:10px 0 14px}
+  .tb.ed td{display:flex;align-items:baseline;gap:12px;padding:2px 0}
+  .tb.ed td[data-l]::before{content:attr(data-l);flex:0 0 84px;font-size:12.5px;color:var(--note)}
+  .tb.ed td.c{text-align:left}
+  .tb.ed td.x{width:auto;justify-content:flex-end}
+  .tb.ed.fx td.ty{display:block;width:auto;padding:0 0 6px}
+  .tb.res-t thead{display:none}
+  .tb.res-t tr{display:block;padding:12px 0}
+  .tb.res-t td{display:flex;justify-content:space-between;gap:16px;padding:3px 0;text-align:right}
+  .tb.res-t td[data-l]::before{content:attr(data-l);font-size:12.5px;color:var(--note);flex:0 0 auto}
+  .tb.res-t td:first-child{display:block;font-size:16px;font-weight:500;padding-bottom:4px}
+  .tb.res-t td[data-l=""]{justify-content:flex-start}
+  .ips .row3{grid-template-columns:minmax(0,1fr)}
+  .kv{grid-template-columns:minmax(0,1fr);row-gap:2px}
+  .kv dd{margin-bottom:10px}
+}
+@media print{
+  .hd,.ftr,.bar,.no-print,.prog,.mmp{display:none!important}
+  .page::after{display:none}
+  .tool .sec,.tool .stp{padding-top:36px}
+  .field{border-bottom-color:transparent}
+  .tipb{background:none;padding:0}
+}
+
+/* 体检报告 */
+.cap.k{background:var(--ink);color:#fff}
+.verdict{font-family:var(--display);font-weight:600;font-size:clamp(26px,2.8cqw,34px);line-height:1.45}
+.dims{margin-top:22px}
+.dim{display:grid;grid-template-columns:52px minmax(0,1fr) auto;column-gap:20px;row-gap:4px;align-items:baseline;padding:18px 0}
+.dim .t{font-weight:500;font-size:17px}
+.dim .v{font-variant-numeric:tabular-nums;font-size:15px;margin-top:2px}
+.dim .s{grid-column:2 / -1}
+.sbar{display:flex;gap:2px;height:12px;margin-top:16px}
+.sbar i{display:block;height:100%;min-width:2px}
+.sbar i:first-child{border-radius:2px 0 0 2px}.sbar i:last-child{border-radius:0 2px 2px 0}
+.sleg{list-style:none;margin-top:12px}
+.sleg li{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;column-gap:12px;align-items:baseline;padding:5px 0;font-size:14.5px}
+.sleg li i{width:12px;height:8px;display:inline-block}
+.sleg .num{color:var(--note);min-width:44px;text-align:right}
+.bm{display:grid;grid-template-columns:110px minmax(0,1fr) auto;column-gap:14px;align-items:center;padding:6px 0;font-size:14.5px}
+.bm .tr{height:10px;background:#F1F0EC;position:relative}
+.bm .tr i{position:absolute;left:0;top:0;bottom:0}
+/* 五个部分 */
+.mods{display:flex;flex-wrap:wrap;gap:4px 40px;margin-top:64px}
+.subnav{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:28px;font-size:14px}
+.tool [id^="s-"]{scroll-margin-top:24px}
+.mods a{display:inline-flex;align-items:baseline;gap:10px;padding:10px 0 9px;border-bottom:2px solid transparent;font-size:15.5px;color:#56575a;cursor:pointer;transition:color .4s var(--ease),border-color .6s var(--ease)}
+.mods a .lb{font-size:14px}
+.mods a:hover{color:var(--ink)}
+.mods a.on{color:var(--ink);border-bottom-color:var(--p)}
+.mod{display:none}.mod.on{display:block}
+.mnav{display:flex;justify-content:space-between;gap:24px;margin-top:clamp(72px,9cqw,120px)}
+.mnav a{cursor:pointer}
+.mhead{padding-top:clamp(72px,9cqw,120px)}
+.mhead .lead{margin-top:18px;max-width:36em}
+/* 阶段 */
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:34px}
+.stg .bar{height:8px;background:var(--stone);transition:background .6s var(--ease)}
+.stg.done .bar{background:var(--p);opacity:.55}
+.stg.on .bar{background:var(--p)}
+.stg .lb{margin-top:14px;display:block;color:var(--grey)}
+.stg .t{font-weight:500;font-size:16px;margin-top:2px;color:#8a8b8d}
+.stg.on .lb{color:var(--ink-blue)}.stg.on .t,.stg.done .t{color:var(--ink)}
+.conds{list-style:none;margin-top:14px}
+.conds li{display:grid;grid-template-columns:28px minmax(0,1fr);padding:6px 0;font-size:15px;line-height:1.75}
+.conds li::before{content:"";width:10px;height:10px;border-radius:50%;margin-top:9px;border:1px solid var(--grey)}
+.conds li.ok::before{background:var(--p);border-color:var(--p)}
+.conds li.ok{color:var(--note)}
+/* 图 */
+.chart{position:relative;margin-top:28px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-family:var(--text);font-size:12px;fill:var(--note)}
+.chart .ax line{stroke:var(--stone);stroke-width:1}
+.chart .band{fill:var(--lilac)}
+.chart .mid{fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .ref{stroke:var(--ink);stroke-width:1}
+.chart .xh{stroke:var(--ink);stroke-width:1;opacity:0;transition:opacity .2s}
+.chart .dot{fill:var(--ink);stroke:#fff;stroke-width:2;opacity:0}
+.chart.hov .xh,.chart.hov .dot{opacity:1}
+.ctip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--stone);padding:10px 14px;font-size:13px;line-height:1.7;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .25s,transform .25s;box-shadow:0 6px 18px -10px rgba(23,23,23,.25)}
+.chart.hov .ctip{opacity:1;transform:none}
+.ctip b{font-weight:500}
+.ctip .k{color:var(--note);margin-left:8px}
+.lgd{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:14px;font-size:13px;color:var(--note)}
+.lgd i{display:inline-block;vertical-align:middle;margin-right:8px}
+.lgd .sw{width:16px;height:10px;background:var(--lilac)}
+.lgd .ln{width:18px;height:2px;background:var(--ink)}
+.lgd .rf{width:18px;height:1px;background:var(--ink)}
+details.yt{margin-top:28px}
+details.yt summary{font-size:15px}
+.tb.sm{font-size:13.5px}.tb.sm td{padding:8px 14px 8px 0}.tb.sm th{padding-right:14px}
+.ro{font-size:15px;padding:8px 0;display:block}
+.tb.fx td.ty{width:42%;padding-right:18px}
+.tb.fx td.ty .s{font-size:12.5px;margin-top:2px;line-height:1.5}
+.tb.fx td.na{color:var(--note)}
+.tb.fx tr.sg td{padding:26px 0 6px;font-size:13px;color:var(--note);letter-spacing:.04em;border-bottom:0}
+.tb.fx .xl{display:block;font-size:12px;color:var(--note);margin-top:4px}
+.rq{border:0;padding:0;margin:34px 0 0}
+.rq legend{font-size:16px;font-weight:500;padding:0;display:flex;gap:12px;align-items:baseline}
+.rq legend .lb{font-size:13px;color:var(--note)}
+.rq>.s{margin-top:6px}
+.ro2{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.verdict.sm{font-size:22px}
+.field.auto::placeholder{color:var(--ink);opacity:1}
+.tb.fx .in.x2{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.tb.fx tr.addr td{padding:2px 0 8px}
+.tb.fx tr.addr .add{margin-top:0}
+.tb.fx .un{display:flex;align-items:baseline;gap:10px}
+.tb.fx .un .field{flex:1;min-width:0}
+details.rqd{margin-top:34px}
+.tb.fx .in.x2 .field{flex:1;min-width:0}
+@container (max-width:760px){.stages{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.stg .t{font-size:13px}.stg .lb{font-size:12px}.mods{gap:2px 22px}}
+@media print{.mod{display:block!important}.mods,.mnav{display:none!important}}
+/* ── 体检报告 v6：总评 → 家底 → 阶段 → 五层体检 → 钱该怎么放 → 行动清单 → 分享 ── */
+:root{--trk:#F1F0EC}
+.hl{font-family:var(--display);font-weight:600;font-size:clamp(23px,2.5cqw,31px);line-height:1.42;text-wrap:balance}
+.hs{margin-top:10px;font-size:15.5px;line-height:1.8}
+.tag{display:inline-block;justify-self:start;font-size:12px;line-height:1;padding:5px 9px 4px;border-radius:999px;letter-spacing:.04em;white-space:nowrap;vertical-align:2px}
+.tag.l2{background:var(--ink);color:#fff}
+.tag.l1{box-shadow:inset 0 0 0 1px var(--ink)}
+.tag.l0{color:var(--note);box-shadow:inset 0 0 0 1px var(--stone)}
+.tagc{font-family:var(--label);letter-spacing:.12em;font-size:12.5px;color:var(--ink-blue)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:48px}
+.kpi .l{font-size:13px;color:var(--note)}
+.kpi .n{font-family:var(--display);font-weight:600;font-size:clamp(28px,3.1cqw,38px);line-height:1.15;margin-top:8px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi .n small{font-family:var(--text);font-size:15px;font-weight:500;margin-left:4px}
+.kpi .d{font-size:12.5px;color:var(--note);margin-top:6px;line-height:1.6}
+.rb{margin-top:64px}.rb:first-child{margin-top:0}
+.hb{margin-top:28px;display:grid;grid-template-columns:64px minmax(0,1fr);row-gap:12px;column-gap:14px;align-items:center}
+.hb .k{font-size:13.5px;color:var(--note)}
+.hb .r{display:flex;align-items:center;gap:10px;min-width:0}
+.hb .t{display:flex;gap:2px;height:20px;min-width:0}
+.hb .t i{display:block;height:100%;min-width:3px}
+.hb .t i:first-child{border-radius:4px 0 0 4px}.hb .t i:last-child{border-radius:0 4px 4px 0}.hb .t i:only-child{border-radius:4px}
+.hb .v{font-size:14px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums}
+.lg{list-style:none;margin-top:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 28px;font-size:13.5px}
+.lg li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:baseline}
+.lg b{display:block;width:10px;height:10px;border-radius:2px;transform:translateY(1px)}
+.lg span:last-child{font-variant-numeric:tabular-nums;color:var(--note);white-space:nowrap}
+details.how{margin-top:16px}
+details.how summary{display:inline-flex;gap:0;padding:0;font-size:13.5px;font-weight:400;color:var(--ink-blue);cursor:pointer}
+details.how summary::after{content:none}
+details.how summary::before{content:"+";margin-right:6px}
+details.how[open] summary::before{content:"−"}
+details.how>div{margin-top:10px}
+details.how p{padding:0}
+/* 阶段 */
+.trk{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:34px}
+.trk button{font:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--note)}
+.trk button i{display:block;height:6px;border-radius:3px;background:var(--stone)}
+.trk button span{display:block;margin-top:10px;font-size:13.5px;line-height:1.5}
+.trk button .lb{font-size:12.5px;color:inherit}
+.trk button.done i{background:var(--lilac);opacity:.55}
+.trk button.on{color:var(--ink)}.trk button.on i{background:var(--lilac);box-shadow:inset 0 -2px 0 var(--ink)}
+.trk button.sel>span{text-decoration:underline;text-underline-offset:4px}
+.trk button:not(.on):hover{color:var(--ink)}
+.goals{list-style:none;margin-top:26px}
+.goals li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:11px 0;align-items:baseline;font-size:15px}
+.goals .tag{justify-self:start}
+.reads{list-style:none;margin-top:12px}
+.reads li{padding:6px 0;font-size:15px}
+.reads .s{margin-left:10px}
+.peek{margin-top:28px;padding:22px 24px;background:var(--trk);border-radius:6px}
+.peek .c{font-family:var(--display);font-weight:600;font-size:19px;margin-top:6px}
+/* 五层体检 */
+.pyr{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:30px}
+.ly{font:inherit;border:0;cursor:pointer;display:grid;grid-template-columns:28px auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;padding:13px 16px;border-radius:4px;background:var(--trk);color:var(--ink);min-width:300px;max-width:100%}
+.ly.l2{background:var(--lilac)}
+.ly .lb{font-size:12.5px}
+.ly .n{font-weight:500;font-size:15px;white-space:nowrap}
+.ly .m{font-size:13px;color:var(--note);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ly.l2 .m{color:var(--ink)}
+.ly.sel,.ly.sel:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ly:hover{box-shadow:inset 0 0 0 1px var(--ink)}
+.an{margin-top:36px}
+.an .hd2{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.an .hd2 .n{font-size:14px;color:var(--note)}
+.an .c{font-family:var(--display);font-weight:600;font-size:19px;line-height:1.5;margin-top:6px;text-wrap:balance}
+.an .c2{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.5;margin-top:44px}
+.bul{margin-top:20px;display:grid;grid-template-columns:112px minmax(0,1fr) auto;column-gap:14px;row-gap:12px;align-items:center;font-size:13.5px}
+.bul .bt{position:relative;height:16px;border-radius:4px;background:var(--trk);box-shadow:inset 0 0 0 1px var(--stone)}
+.bul .bt i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--lilac);box-shadow:inset -2px 0 0 var(--ink)}
+.bul .bt i.z{box-shadow:none}
+.bul .v{color:var(--note);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ga{position:relative;margin-top:26px;height:64px}
+.ga .gt{position:absolute;left:0;right:0;top:22px;height:16px;border-radius:4px;background:var(--trk);box-shadow:inset 0 0 0 1px var(--stone)}
+.ga .gt i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--lilac)}
+.ga .mk{position:absolute;top:14px;width:2px;height:30px;background:var(--ink);transform:translateX(-1px)}
+.ga .mk span{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:12.5px;white-space:nowrap}
+.ga .tk{position:absolute;top:44px;font-size:12px;color:var(--note);transform:translateX(-50%);white-space:nowrap}
+.ga .tk.z{transform:none}.ga .tk.e{transform:translateX(-100%)}
+.gl{display:grid;grid-template-columns:84px minmax(0,1fr) 48px;gap:14px;align-items:center;margin-top:30px;font-size:13.5px}
+.gl .k{color:var(--note)}
+.gl .gt{position:relative;height:16px;border-radius:4px;background:var(--trk);box-shadow:inset 0 0 0 1px var(--stone)}
+.gl .gt i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--lilac)}
+.gl .gt b{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--ink);transform:translateX(-1px)}
+.gl .gt b span{position:absolute;bottom:100%;left:50%;transform:translate(-50%,-4px);font-size:12px;font-weight:400;white-space:nowrap}
+.gl .v{font-weight:500;text-align:right}
+.mini{margin-top:18px;width:100%;border-collapse:collapse;font-size:14px}
+.mini td{padding:8px 16px 8px 0;font-variant-numeric:tabular-nums;vertical-align:baseline}
+.mini td:last-child{padding-right:0;text-align:right}
+.bsvg{margin-top:18px;width:100%;height:auto;display:block}
+.bsvg text{font-family:var(--text);font-size:12px;fill:var(--note)}
+.stress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:22px}
+.stress .l{font-size:13.5px;color:var(--note)}
+.stress .n{font-family:var(--display);font-weight:600;font-size:26px;margin-top:6px;white-space:nowrap}
+.stress .d{font-size:12.5px;color:var(--note);margin-top:4px}
+/* 行动清单 */
+.acts{list-style:none;margin-top:16px;counter-reset:a}
+.acts li{display:grid;grid-template-columns:44px 84px minmax(0,1fr);gap:8px;padding:12px 0;font-size:15.5px;line-height:1.8;counter-increment:a}
+.acts li::before{content:counter(a,decimal-leading-zero);font-family:var(--label);letter-spacing:.14em;font-size:14px;color:var(--ink-blue);padding-top:3px}
+.acts .tagc{padding-top:4px}
+.grp2{margin-top:36px;font-size:14px;color:var(--note)}
+/* 分享 */
+.share{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:40px;margin-top:30px;align-items:start}
+.opts2{display:flex;flex-direction:column;gap:12px;font-size:15px}
+.opts2 label{display:flex;gap:10px;align-items:baseline;cursor:pointer}
+.opts2 input{accent-color:var(--ink);transform:translateY(2px)}
+.opts2 .sep{margin-top:10px}
+.btns{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:28px}
+.rbtn{font:inherit;font-size:15px;background:var(--ink);color:#fff;border:0;border-radius:999px;padding:10px 20px;cursor:pointer}
+.rbtn.o{background:none;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.rbtn:disabled{opacity:.5;cursor:wait}
+.scard{width:340px;max-width:100%;background:#fff;box-shadow:0 0 0 1px var(--stone);border-radius:10px;padding:30px 28px 26px;font-size:13px}
+.scard .ct{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.4}
+.scard .cd{color:var(--note);margin-top:4px;font-size:12px}
+.scard .sv{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.5;margin-top:22px}
+.scard .ss{margin-top:20px}
+.scard .ss>.lb{font-size:12px}
+.scard .cl{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:10px}
+.scard .cr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 10px;border-radius:3px;background:var(--trk);font-size:12px}
+.scard .cr.l2{background:var(--lilac)}
+.scard .cr .m{font-size:11px;color:var(--note);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scard .cr .tag{font-size:10.5px;padding:3px 6px 2px}
+.scard .trk{margin-top:10px;gap:4px}
+.scard .trk button{cursor:default}
+.scard .trk button span{font-size:11px;margin-top:6px}
+.scard .trk button .lb{display:none}
+.scard .cg{list-style:none;margin-top:8px}
+.scard .cg li{padding:3px 0}
+.scard .kp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.scard .kp .n{font-family:var(--display);font-weight:600;font-size:20px}
+.scard .ft{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;gap:16px}
+.scard .ft img{height:22px;display:block}
+.scard .qr{display:flex;gap:10px;align-items:flex-end;text-align:right}
+.scard .qr p{font-size:11.5px;line-height:1.5;color:var(--note)}
+.scard .qr svg{width:64px;height:64px;display:block}
+.apx details{padding:4px 0}
+@container (max-width:760px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:30px}
+  .lg{grid-template-columns:minmax(0,1fr)}
+  .trk button span{font-size:12px}
+  .ly{min-width:0;width:100%!important;grid-template-columns:24px minmax(0,1fr) auto;padding:12px}
+  .ly .m{display:none}
+  .ly .tag{justify-self:end}
+  .bul{grid-template-columns:84px minmax(0,1fr)}
+  .bul .v{grid-column:2;margin-top:-6px}
+  .stress{grid-template-columns:minmax(0,1fr);gap:18px}
+  .acts li{grid-template-columns:36px minmax(0,1fr)}
+  .acts .tagc,.acts li>div{grid-column:2}
+  .acts .tagc{padding-top:0}
+  .share{grid-template-columns:minmax(0,1fr)}
+  .mini td.s{display:none}
+}
+@media print{body.pr2 .mod:not([data-mod="2"]){display:none!important}.an,.rb,.kpis{break-inside:avoid}}
+/* 公开版：页头只留两个链接，手机上也显示 */
+.nav a.n.pub{display:inline!important}
+@container (max-width:760px){.nav{gap:24px}}
+</style>
+</head>
+<body data-c="lilac" data-p="tool"><div class="prog" aria-hidden="true"></div><div class="page tool" data-c="lilac">
+<header class="hd"><a href="https://longarcsociety.com/"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 140" class="la" role="img" aria-label="Long Arc 回到首页"><path fill="#171717" d="M8.2 0H30.2V120H66.4V140H8.2Z M157 0H186.8L209.6 140H187.6L183.6 112.2V112.6H158.6L154.6 140H134.2ZM181 93.6 171.2 24.4H170.8L161.2 93.6Z"/><circle cx="105.8" cy="123" r="17"/></svg></a><nav class="nav"><a class="n pub" href="https://longarcsociety.com/assets/invest" target="_blank" rel="noreferrer">方法文章</a><a class="n pub" href="https://github.com/Jianing1117/assets-checkup" target="_blank" rel="noreferrer">GITHUB</a></nav></header>
+<div class="wrap">
+
+<section class="rv" style="padding-top:clamp(48px,8cqw,120px)">
+  <div class="lb">LONG ARC · 投资配置 · TOOL</div>
+  <h1 class="h1" style="margin-top:14px">家庭资产配置体检</h1><div class="rule"></div>
+  <p class="lead" style="margin-top:22px;max-width:36em">一次性的检查，分三部分：先填体检问卷，再看体检报告，最后可以写一页投资政策书。报告先给总评和家底，再告诉你在哪个财务阶段、五层里哪一层要先补、钱该怎么放，最后列出接下来要做的几件事，可以存成图片或 PDF。</p>
+  <p class="s" style="margin-top:12px;max-width:42em">你填的数只存在这台设备的浏览器里，不会上传。换设备或清理浏览器之前，先备份数据。所有金额的单位都是万元。</p>
+  <div class="bar no-print">
+    <button type="button" class="lk" data-act="sample">填入示例家庭</button>
+    <button type="button" class="lk" data-act="restore">恢复备份</button>
+    <button type="button" class="lk" data-act="backup">备份数据</button>
+    <button type="button" class="lk" data-act="md">导出给 AI</button>
+    <button type="button" class="lk" data-act="print">打印结果</button>
+    <button type="button" class="lk" data-act="clear">清空重填</button>
+    <input type="file" accept="application/json,.json" hidden data-file>
+  </div>
+  <nav class="mods no-print" data-mods>
+    <a data-go="1"><span class="lb">01</span>体检问卷</a>
+    <a data-go="2"><span class="lb">02</span>体检报告</a>
+    <a data-go="3"><span class="lb">03</span>投资政策书</a>
+  </nav>
+</section>
+
+<!-- ══════════ 01 体检问卷 ══════════ -->
+<div class="mod" data-mod="1">
+<section class="mhead"><div class="lb">01 · QUESTIONNAIRE</div><h2 class="h1" style="margin-top:12px">体检问卷</h2><p class="lead">先填家庭成员，再填资产、负债和收支，然后是计划和保障，最后几道题看你能接受多大的起伏。前面填过的数会自动带到后面，不用填第二遍。不用一次填全，先填大项，体检报告就能出结果。</p>
+  <nav class="subnav no-print"><a class="lk" href="#s-people">家庭成员</a><a class="lk" href="#s-assets">资产和负债</a><a class="lk" href="#s-flow">收入和支出</a><a class="lk" href="#s-plans">计划和保障</a><a class="lk" href="#s-type">投资偏好</a></nav></section>
+<section class="two stp" id="s-people">
+  <div><div class="lb">PEOPLE</div><p class="s" style="margin-top:6px">家庭成员</p></div>
+  <div><h3 class="h2">家庭成员</h3>
+    <p class="p">住在一起、钱合在一起的人。由你们负担、但不住在一起的父母不用列，给他们的钱写在后面的支出和计划里。角色决定每个人该配哪些保险，年龄决定股票比例和孩子的教育费付到哪年。</p>
+    <div data-list="members"></div>
+  </div>
+</section>
+<section class="two stp" id="s-assets">
+  <div><div class="lb">ASSETS</div><p class="s" style="margin-top:6px">资产</p></div>
+  <div><h3 class="h2">家里有哪些资产</h3>
+    <p class="p">按今天的余额或市值填，单位万元，没有的空着。预期年化可以不填，按灰色的默认值算。</p>
+    <div class="h3 grp">流动性资产</div><p class="s">随时能取、本金不会亏的钱，应急金从这里出。利息按预期年化自动算进收入。</p>
+    <div data-fixed="cash"></div>
+    <div class="h3 grp">投资</div><p class="s">按资产类型分三类。稳健类的利息和理财收益，按预期年化自动算进收入；股票、黄金、加密的预期年化是长期平均，含涨跌和分红，只用来往后推，不算进每年的收入。哪些钱是五年内要用的稳钱、哪些是长钱，报告里再按用途分。</p>
+    <div data-fixed="inv"></div>
+    <div class="fs">
+      <label class="f"><span>上面这些里面，美元资产一共多少</span><em>美元存款、美元理财、美股和美股基金，折成人民币。预填的是「海外股票和 ETF」那一行，定期、理财里有美元的，加上</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="usdAmt"><span class="u">万元</span></div></label>
+    </div>
+    <div data-out="assetsum"></div>
+    <p class="s" style="margin-top:10px">默认值都偏保守：活期按 0；货币基金和定期按 1.2%，接近 1 年期定存（2026 年 6 月）；国债、理财、债券基金按 1.7%，接近 10 年期国债（2026 年 9 月 30 日约 1.68%）；美元存款和美元理财的利率通常比人民币高，记进定期、理财那两行时，可以把预期年化改成实际的大概数；股票类按 5.3%，取《收益 02》给沪深 300 估的十年区间的偏下沿；黄金没有现金流，按只跟上通胀算；加密资产不假设增长。</p>
+    <div class="h3 grp">不好随时卖的</div><p class="s">不参与分账户，但算进净资产。最后一列的租金、分红和利息会带到「收入」，储蓄险的保费算进应急金。公积金不用填，体检里不算它。</p>
+    <div data-fixed="ill"></div>
+    <div class="fs">
+      <label class="f"><span>金融资产里，和房地产相关的部分</span><em>房企的股票和债券、主要投向房地产的理财或信托，按实际改。预填的数按股票和股票基金的 0.3% 估，这是沪深 300 里房地产的权重（2026 年 8 月）</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="reFin"><span class="u">万元</span></div></label>
+    </div>
+    <div data-out="unitwarn"></div>
+  </div>
+</section>
+<section class="two stp">
+  <div><div class="lb">LIABILITIES</div><p class="s" style="margin-top:6px">负债</p></div>
+  <div><h3 class="h2">还欠着哪些钱</h3>
+    <p class="p">同一类有好几笔的，加在一起填，利率写个大概。按月还的，月还款会自动算进支出，还完的那年自动去掉。年化超过 6% 的，报告会排在稳钱和长钱前面先还。信用卡分期写实际年化：大约是「每期手续费率 × 12」的 1.8 倍，比如每期 0.6%，实际年化约 13%。</p>
+    <div data-fixed="debt"></div>
+  </div>
+</section>
+<section class="two stp" id="s-flow">
+  <div><div class="lb">INCOME</div><p class="s" style="margin-top:6px">收入</p></div>
+  <div><h3 class="h2">每年的收入</h3>
+    <p class="p">按过去 12 个月、税后填。年终奖算一次；卖房卖股票的钱、借来的钱、股票没卖的浮盈都不算收入。</p>
+    <div class="h3 grp">工资和奖金</div><p class="s">家庭成员从上面带过来。收入稳不稳，会影响应急金留多少、股票放多少。</p>
+    <div data-out="inctable"></div>
+    <div class="cbs"><label class="cb"><input type="checkbox" data-k="shrinking">有人所在的行业正在收缩</label><label class="cb"><input type="checkbox" data-k="sameCity">有人的工作依赖房子所在的城市，或者就在房地产行业</label></div>
+    <div class="h3 grp">工资以外的</div>
+    <div data-fixed="inc"></div>
+  </div>
+</section>
+<section class="two stp">
+  <div><div class="lb">SPENDING</div><p class="s" style="margin-top:6px">支出</p></div>
+  <div><h3 class="h2">每年花多少</h3>
+    <p class="p">按过去 12 个月填。定投、存款、储蓄型保险的保费是存钱，不算支出。「收入断了」那一列按你家的情况改，「还要付」的加起来，就是应急金要管的必需支出。</p>
+    <div data-fixed="exp"></div>
+  </div>
+</section>
+<section class="two stp" id="s-plans">
+  <div><div class="lb">PLANS</div><p class="s" style="margin-top:6px">计划</p></div>
+  <div><h3 class="h2">退休，和接下来的大事</h3>
+    <div class="fs">
+      <label class="f"><span>打算多少岁退休</span><div class="in"><input class="field" type="text" inputmode="numeric" data-k="retire"><span class="u">岁</span></div></label>
+      <label class="f"><span>退休后全家每年能领的养老金</span><em>按今天的钱；怎么估见《账本 05》</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="pension"><span class="u">万元 / 年</span></div></label>
+    </div>
+    <div class="sub"><div class="h3">接下来的大事</div>
+      <p class="s">一行一件事，写比今天的收支多出来或会变的部分，已经在每年支出里的不要再写。金额按今天的价格。五年内要花的会成为稳钱；海外教育、海外生活和医疗要用外币付，算美元账单；两类教育和赡养父母会算进寿险。房贷、车贷哪年还完，工具自己算。</p>
+      <div data-list="plans"></div></div>
+  </div>
+</section>
+<section class="two stp" id="s-shield">
+  <div><div class="lb">COVERED</div><p class="s" style="margin-top:6px">保障</p></div>
+  <div><h3 class="h2">每个人已经有什么</h3>
+    <p class="p">勾上已经有的险种，再填寿险和重疾险的保额。惠民保勾在医保里。保额缺口不用再填别的数，从前面取。</p>
+    <div data-out="instable"></div>
+  </div>
+</section>
+<section class="two stp" id="s-type">
+  <div><div class="lb">RISK</div><p class="s" style="margin-top:6px">投资偏好</p></div>
+  <div><h3 class="h2">你能接受多大的起伏</h3>
+    <p class="p">选一档。档位决定应急金留几个月，股票比例往上还是往下调 10 个百分点。</p>
+    <div class="opts" data-opts>
+      <label class="opt" data-v="cons"><input type="radio" name="tier" value="cons" data-k="tier"><span class="ck"></span><div><div class="t">保守</div><p class="s">宁可少赚一点，也想睡得踏实。应急金多留，股票少放。</p></div><span class="s r">应急 6–12 个月 · 股票 −10</span></label>
+      <label class="opt" data-v="std"><input type="radio" name="tier" value="std" data-k="tier"><span class="ck"></span><div><div class="t">标准</div><p class="s">照一个靠谱的标准来。</p></div><span class="s r">应急 3–6 个月 · 股票不调</span></label>
+      <label class="opt" data-v="aggr"><input type="radio" name="tier" value="aggr" data-k="tier"><span class="ck"></span><div><div class="t">激进</div><p class="s">能接受更大的起伏，想多放一些在长期增长上。</p></div><span class="s r">应急 1–3 个月 · 股票 +10</span></label>
+    </div>
+    <div data-out="tiernote"></div>
+    <details class="yt rqd"><summary>拿不准选哪一档？答四道题，给你一个建议</summary>
+      <p class="s" style="margin-top:12px">按你实际做过的、真会做的选。</p>
+      <div data-riskq></div>
+      <div data-out="risksugg" style="margin-top:36px"></div>
+    </details>
+    <div class="fs">
+      <label class="f"><span>黄金这一块，最多能接受亏掉金融资产的</span><em>按跌一半倒推上限，比如 5%</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="goldLoss"><span class="u">%</span></div></label>
+      <label class="f"><span>加密资产这一块，最多能接受亏掉金融资产的</span><em>按跌八成倒推上限，比如 2%；不想碰就填 0</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="cryptoLoss"><span class="u">%</span></div></label>
+      <label class="f"><span>按哪个年龄算股票比例</span><em data-out="agehint">默认取家里大人的平均年龄</em><div class="in"><input class="field" type="text" inputmode="numeric" data-k="ageOverride"><span class="u">岁</span></div></label>
+    </div>
+    <div data-out="agewarn"></div>
+  </div>
+</section>
+<div class="mnav no-print"><span></span><a class="go" data-go="2">下一部分：体检报告</a></div>
+</div>
+
+<!-- ══════════ 02 体检报告 ══════════ -->
+<div class="mod" data-mod="2">
+<section class="mhead" id="s-report"><div class="lb">02 · REPORT</div><h2 class="h1" style="margin-top:12px">体检报告</h2><p class="s" style="margin-top:12px" data-out="rmeta"></p>
+  <nav class="subnav no-print"><a class="lk" href="#s-verdict">总评</a><a class="lk" href="#s-balance">家底</a><a class="lk" href="#s-stage">阶段</a><a class="lk" href="#s-layers">五层体检</a><a class="lk" href="#s-advice">钱该怎么放</a><a class="lk" href="#s-actions">行动清单</a><a class="lk" href="#s-share">保存和分享</a></nav></section>
+<section class="two stp" id="s-verdict">
+  <div><div class="lb">VERDICT</div><p class="s" style="margin-top:6px">总评</p></div>
+  <div data-out="verdict"></div>
+</section>
+<section class="two stp" id="s-balance">
+  <div><div class="lb">BALANCE</div><p class="s" style="margin-top:6px">家底</p></div>
+  <div data-out="balance"></div>
+</section>
+<section class="two stp" id="s-stage">
+  <div><div class="lb">STAGE</div><p class="s" style="margin-top:6px">你在哪一步</p></div>
+  <div data-out="stage"></div>
+</section>
+<section class="two stp" id="s-layers">
+  <div><div class="lb">FIVE LAYERS</div><p class="s" style="margin-top:6px">五层体检</p></div>
+  <div data-out="layers"></div>
+</section>
+<section class="two stp" id="s-advice">
+  <div><div class="lb">ALLOCATION</div><p class="s" style="margin-top:6px">钱该怎么放</p></div>
+  <div data-out="alloc"></div>
+</section>
+<section class="two stp" id="s-actions">
+  <div><div class="lb">ACTIONS</div><p class="s" style="margin-top:6px">行动清单</p></div>
+  <div data-out="actions"></div>
+</section>
+<section class="two stp no-print" id="s-share">
+  <div><div class="lb">SHARE</div><p class="s" style="margin-top:6px">保存和分享</p></div>
+  <div>
+    <h2 class="hl">存一份，或者发给朋友</h2>
+    <p class="hs">分享图默认不带金额。勾选要放进去的部分；只给自己存的话，可以打开「带上金额」。图在你的浏览器里生成，不会上传。</p>
+    <div class="share">
+      <div>
+        <div class="fs one no-print" style="margin-top:0;margin-bottom:26px"><label class="f"><span>卡片上的名字</span><em>标题会写成「××家的资产配置体检」；空着就用家庭成员里主要收入者的名字</em><div class="in"><input class="field" type="text" data-k="shareName" maxlength="12"></div></label></div>
+        <div class="opts2" data-shopts>
+          <label><input type="checkbox" data-c="verdict" checked>总评和五层体检</label>
+          <label><input type="checkbox" data-c="stage" checked>所在的阶段和这一步的目标</label>
+          <label><input type="checkbox" data-c="kpi">四个关键数</label>
+          <label><input type="checkbox" data-c="acts">行动清单</label>
+          <label class="sep"><input type="checkbox" data-c="money">带上金额</label>
+        </div>
+        <div class="btns">
+          <button type="button" class="rbtn" data-act="png">生成分享图</button>
+          <button type="button" class="rbtn o" data-act="pdf">保存完整报告（PDF）</button>
+        </div>
+        <p class="s" style="margin-top:14px">完整报告带全部数字。点了以后，在打印窗口里选「存储为 PDF」。</p>
+      </div>
+      <div class="scard" data-card></div>
+    </div>
+  </div>
+</section>
+<section class="two stp" id="s-appendix">
+  <div><div class="lb">APPENDIX</div><p class="s" style="margin-top:6px">附录</p></div>
+  <div class="apx">
+    <h2 class="hl">假设和明细</h2>
+    <p class="hs">默认收起，需要时点开。</p>
+    <div style="margin-top:14px">
+      <details data-key="apx-assume"><summary>假设和可以调的数</summary><div style="padding-bottom:24px">
+        <div class="fs no-print">
+          <label class="f"><span>应急月数</span><em data-out="mhint"></em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="months"><span class="u">个月</span></div></label>
+          <label class="f"><span>五年内要用的钱，放进股票的比例</span><em>建议是 0；放的话，用钱那年碰上大跌会少一截</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="shortStock" placeholder="0"><span class="u">%</span></div></label>
+          <label class="f"><span>推到多少岁</span><div class="in"><input class="field" type="text" inputmode="numeric" data-k="endAge"><span class="u">岁</span></div></label>
+          <label class="f"><span>工资每年涨多少</span><em>默认和通胀一样</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="gs"><span class="u">% / 年</span></div></label>
+          <label class="f"><span>支出每年涨多少</span><em>默认和通胀一样</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="ge"><span class="u">% / 年</span></div></label>
+          <label class="f"><span>通胀</span><em>《保障 03》也按每年 2% 算</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="infl"><span class="u">% / 年</span></div></label>
+          <label class="f"><span>财务自由按每年取出多少算</span><em>《账本 04》：中国家庭用 3% 到 3.5% 更稳妥</em><div class="in"><input class="field" type="text" inputmode="decimal" data-k="wr"><span class="u">%</span></div></label>
+        </div>
+        <div data-out="short"></div>
+        <div data-out="assume"></div>
+      </div></details>
+      <details data-key="apx-ratios"><summary>比率明细</summary><div style="padding-bottom:24px" data-out="ratios"></div></details>
+      <details data-key="apx-bench"><summary>和别人比</summary><div style="padding-bottom:24px" data-out="bench"></div></details>
+      <details data-key="apx-sim"><summary>往后推的逐年数</summary><div style="padding-bottom:24px" data-out="simtable"></div></details>
+      <details data-key="apx-notes"><summary>这份报告怎么算的</summary><div class="p" style="padding-bottom:24px">
+        <p>收入是税后的，不含公积金；利息和理财收益按流动性资产、稳健类的金额和预期年化算，股票、黄金、加密的涨跌和分红不算进每年的收入，只在往后推时用。支出按过去 12 个月，贷款按完整的月还款算；存下的钱 = 结余 + 还掉的贷款本金。</p>
+        <p style="margin-top:10px">金融资产是流动性资产加投资；个人养老金、企业年金、储蓄险的现金价值是受限资产，公积金不算；房子按近期成交价打九折，和车、受限资产、股权投资一起算作不好随时卖的资产。长期的钱 = 金融资产扣掉应急金、五年内要花的钱和高息负债，再加上受限资产。</p>
+        <p style="margin-top:10px">比率的参考线主要来自国内理财规划教材里通行的家庭财务比率（各处给的线不完全一致，这里写的是常见的区间）、美国 Fidelity 的储蓄倍数，以及中国人民银行 2019 年的城镇家庭调查。你填的数只在这台设备上计算，不会上传。</p>
+      </div></details>
+    </div>
+    <p class="end">这里的数，是按慢复利「投资配置」这一套方法算出来的参考，不涉及任何具体的基金或产品。比例最后由你自己定。方法和数据出处都在投资配置的文章里。</p>
+  </div>
+</section>
+<div class="mnav no-print"><a class="go" data-go="1">上一部分：体检问卷</a><a class="go" data-go="3">下一部分：投资政策书</a></div>
+</div>
+
+<!-- ══════════ 03 投资政策书 ══════════ -->
+<div class="mod" data-mod="3">
+<section class="mhead" id="s-ips-head"><div class="lb">03 · POLICY</div><h2 class="h1" style="margin-top:12px">投资政策书</h2><p class="lead">把自己的投资规则写在一页纸上。能算的已经按体检报告填好，剩下的自己写。</p></section>
+<section class="two stp" id="s-policy">
+  <div><div class="lb">POLICY</div><p class="s" style="margin-top:6px">投资政策书</p></div>
+  <div><h3 class="h2">一页投资政策书</h3>
+    <p class="p">把规则写下来，大跌的时候照着纸上做，比临时判断可靠得多。能算的已经填好，剩下的自己写，写完打印出来，和家人一起签上名字。<a class="lk" href="https://longarcsociety.com/assets/behave-ips" target="_blank" rel="noreferrer">写法见《行为 05》</a></p>
+    <ol class="ips">
+      <li><span class="lb">01</span><div><div class="q">这笔钱为了什么</div><div class="a"><textarea class="field" rows="2" data-k="ips1" placeholder="目标是什么，多少年后开始用，大概需要多少"></textarea></div></div></li>
+      <li><span class="lb">02</span><div><div class="q">管哪些钱</div><div class="a" data-out="ips2"></div></div></li>
+      <li><span class="lb">03</span><div><div class="q">谁来决定</div><div class="a"><textarea class="field" rows="2" data-k="ips3" placeholder="谁定规则，谁执行，多大的变动要两个人都同意"></textarea></div></div></li>
+      <li><span class="lb">04</span><div><div class="q">对收益的预期</div><div class="a"><textarea class="field" rows="2" data-k="ips4" placeholder="一个现实的长期区间。写上：有的年份会亏钱，这是正常的"></textarea></div></div></li>
+      <li><span class="lb">05</span><div><div class="q">风险底线</div><div class="a" data-out="ips5"></div></div></li>
+      <li><span class="lb">06</span><div><div class="q">目标配置</div><div class="a">
+        <div class="row3">
+          <label class="f"><span>股票类</span><div class="in"><input class="field" type="text" inputmode="decimal" data-k="tStock"><span class="u">%</span></div></label>
+          <label class="f"><span>黄金</span><div class="in"><input class="field" type="text" inputmode="decimal" data-k="tGold" placeholder="0"><span class="u">%</span></div></label>
+          <label class="f"><span>加密资产</span><div class="in"><input class="field" type="text" inputmode="decimal" data-k="tCrypto" placeholder="0"><span class="u">%</span></div></label>
+        </div>
+        <div data-out="ips6"></div></div></div></li>
+      <li><span class="lb">07</span><div><div class="q">工具和禁区</div><div class="a"><textarea class="field" rows="2" data-k="ips7" placeholder="主要用什么持有，哪些事不做，比如不借钱投资、不买看不懂结构的产品"></textarea></div></div></li>
+      <li><span class="lb">08</span><div><div class="q">执行规则</div><div class="a"><textarea class="field" rows="2" data-k="ips8" placeholder="新钱怎么投，一笔大钱怎么投，多久看一次账户"></textarea></div></div></li>
+      <li><span class="lb">09</span><div><div class="q">再平衡和复盘</div><div class="a">
+        <div class="fs no-print" style="margin-top:6px"><label class="f"><span>每年哪个月检查一次</span><div class="in"><select class="field" data-k="ipsMonth"></select></div></label></div>
+        <div data-out="ips9"></div></div></div></li>
+      <li><span class="lb">10</span><div><div class="q">怎样修改</div><div class="a">只在生活变了的时候改：收入结构变了、结婚或有了孩子、买房或卖房、离退休只剩五年左右。改之前写下理由，冷静 30 天，再和家人一起定。市场涨跌不是修改的理由，那时候要做的是再平衡。</div></div></li>
+    </ol>
+    <div class="sub">
+      <div class="h3">下跌预案</div>
+      <table class="tb res-t" style="margin-top:18px"><thead><tr><th>跌幅</th><th>先做什么</th><th>再做什么</th><th>这一档不做的事</th></tr></thead><tbody>
+        <tr><td>10%</td><td data-l="先做">读一遍这页纸</td><td data-l="再做">什么都不用调</td><td data-l="不做">不临时加仓或减仓</td></tr>
+        <tr><td>20%</td><td data-l="先做">检查用钱计划有没有变</td><td data-l="再做">股票类跌出范围下限，就按规则再平衡</td><td data-l="不做">不卖出离场</td></tr>
+        <tr><td>30%</td><td data-l="先做">和一起签字的人通一次电话</td><td data-l="再做">再平衡，确认应急金充足</td><td data-l="不做">30 天内不做无法反悔的决定</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</section>
+<div class="mnav no-print"><a class="go" data-go="2">上一部分：体检报告</a><span></span></div>
+</div>
+
+
+</div>
+<footer class="ftr"><div class="ftr-in"><div class="ftr-a"><a href="https://longarcsociety.com/"><img class="wm" src="assets/la-wordmark-left.svg" alt="慢复利 Long Arc"></a></div>
+  <div class="ftr-r"><nav class="ftr-z"><a href="https://longarcsociety.com/assets/invest" target="_blank" rel="noreferrer">投资配置文章</a><a href="https://github.com/Jianing1117/assets-checkup/blob/main/docs/方法说明.md" target="_blank" rel="noreferrer">方法说明</a><a href="https://github.com/Jianing1117/assets-checkup" target="_blank" rel="noreferrer">GitHub</a><span class="lb g">MIT · © 2026</span></nav></div>
+</div></footer>
+</div>
+<div class="toast" data-toast></div>
+<script src="site.js" defer></script>
+<script src="lib/qrcode.min.js"></script>
+<script src="checkup.js" defer></script>
+</body></html>
