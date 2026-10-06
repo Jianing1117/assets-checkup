@@ -1,4 +1,4 @@
-/* 家庭资产配置体检：计算规则见 docs/方法说明.md */
+/* 家庭财务体检：计算规则见 docs/方法说明.md */
 (() => {
 const D = document, KEY = 'la-checkup-v5', OLD = 'la-checkup-v2', YEAR = new Date().getFullYear();
 const ART = (slug, text) => `<a class="lk" href="https://longarcsociety.com/assets/${slug}" target="_blank" rel="noreferrer">${text}</a>`;
@@ -818,7 +818,7 @@ function renderCard() {
   const nmDef = (() => { const m = st.members.find(x => x.role === 'main') || st.members[0]; const v = m ? String(m.name || '').trim() : ''; return /^(丈夫|妻子|先生|太太|老公|老婆|爸爸|妈妈|家庭成员)$/.test(v) ? '' : v })();
   const ni = D.querySelector('[data-k="shareName"]'); if (ni) ni.placeholder = nmDef || '比如：加宁';
   const who = (has(st.shareName) || String(st.shareName || '').trim() ? String(st.shareName).trim() : nmDef);
-  let h = `<div class="ct">${who ? `${esc(who)}家的资产配置体检` : '家庭资产配置体检'}</div><div class="cd">${d.getFullYear()} 年 ${d.getMonth() + 1} 月 · 慢复利 Long Arc</div>`;
+  let h = `<div class="ct">${who ? `${esc(who)}家的财务体检` : '家庭财务体检'}</div><div class="cd">${d.getFullYear()} 年 ${d.getMonth() + 1} 月 · 慢复利 Long Arc</div>`;
   if (on('verdict')) h += `<div class="sv">${c.head}</div><div class="ss"><div class="lb">五层体检</div><div class="cl">${[...c.order].reverse().map(k => { const i = c.order.indexOf(k), dd = c.dims[k]; return `<div class="cr${dd.lvl === 2 ? ' l2' : ''}" style="width:${100 - i * 9}%"><span>${LAYER[k][0]}</span><span class="m">${money ? dd.mm : ''}</span>${tag(dd.lvl)}</div>` }).join('')}</div></div>`;
   if (on('stage')) h += `<div class="ss"><div class="lb">第 ${c.si + 1} 步 · ${c.cur.name}</div><div class="trk">${c.S.map((s, i) => `<button type="button" tabindex="-1" class="${i < c.si ? 'done' : ''}${i === c.si ? ' on' : ''}"><i></i><span>${s.name}</span></button>`).join('')}</div>
     <ul class="cg">${c.cur.conds.map(([ok, t], j) => `<li>${ok ? '做到了' : '还差'}　${t}${money && !ok && c.cd[c.si][j] ? `<div class="s" style="font-size:11px">${c.cd[c.si][j]}</div>` : ''}</li>`).join('')}</ul></div>`;
@@ -833,7 +833,7 @@ D.addEventListener('click', e => {
   const sb = e.target.closest('[data-trk] button[data-si]'); if (sb) { const i = +sb.dataset.si; stagePeek = stagePeek === i ? null : i; render(); return }
   const b = e.target.closest('[data-act="png"],[data-act="pdf"]'); if (!b) return;
   if (b.dataset.act === 'pdf') { D.body.classList.add('pr2'); D.querySelectorAll('[data-mod="2"] details').forEach(x => { x.open = true }); window.print(); return }
-  const go = () => html2canvas(D.querySelector('[data-card]'), { scale: 3, backgroundColor: '#ffffff' }).then(cv => { const a = D.createElement('a'); a.download = `家庭资产配置体检-${stamp()}.png`; a.href = cv.toDataURL('image/png'); a.click(); b.disabled = false }).catch(() => { b.disabled = false; toast('没生成成功，再试一次') });
+  const go = () => html2canvas(D.querySelector('[data-card]'), { scale: 3, backgroundColor: '#ffffff' }).then(cv => { const a = D.createElement('a'); a.download = `家庭财务体检-${stamp()}.png`; a.href = cv.toDataURL('image/png'); a.click(); b.disabled = false }).catch(() => { b.disabled = false; toast('没生成成功，再试一次') });
   b.disabled = true;
   if (window.html2canvas) go(); else { const s = D.createElement('script'); s.src = 'lib/html2canvas.min.js'; s.onload = go; s.onerror = () => { b.disabled = false; toast('生成图片的组件没加载上，再试一次') }; D.head.append(s) }
 });
@@ -925,9 +925,9 @@ D.addEventListener('click', e => {
   if (act === 'tierauto') { e.preventDefault(); st.tier = ''; resetMonths(); save(); render(); return }
   if (act === 'sample') { if (hasData() && !confirm('用示例家庭的数据覆盖现在填的内容？')) return; st = sample(); fillForm(); save(); render(); toast('已填入示例家庭：夫妻 38 岁和 36 岁，孩子 11 岁') }
   if (act === 'clear') { if (!confirm('清空所有填写的内容？清空之前可以先备份。')) return; st = blank(); fillForm(); save(); render(); toast('已清空') }
-  if (act === 'backup') { download(`家庭资产配置体检-${stamp()}.json`, JSON.stringify({ app: 'la-checkup', version: 5, saved: new Date().toISOString(), data: st }, null, 2), 'application/json'); toast('备份文件已下载') }
+  if (act === 'backup') { download(`家庭财务体检-${stamp()}.json`, JSON.stringify({ app: 'la-checkup', version: 5, saved: new Date().toISOString(), data: st }, null, 2), 'application/json'); toast('备份文件已下载') }
   if (act === 'restore') D.querySelector('[data-file]').click();
-  if (act === 'md') { const md = toMd(); download(`家庭资产配置体检-${stamp()}.md`, md, 'text/markdown'); try { navigator.clipboard && navigator.clipboard.writeText(md) } catch (err) { } toast('已下载，也复制到了剪贴板，可以直接贴给 AI') }
+  if (act === 'md') { const md = toMd(); download(`家庭财务体检-${stamp()}.md`, md, 'text/markdown'); try { navigator.clipboard && navigator.clipboard.writeText(md) } catch (err) { } toast('已下载，也复制到了剪贴板，可以直接贴给 AI') }
   if (act === 'print') window.print();
 });
 D.querySelector('[data-file]').addEventListener('change', e => {
@@ -946,7 +946,7 @@ let tt; function toast(t) { const el = D.querySelector('[data-toast]'); el.textC
 /* ── 导出给 AI ── */
 function toMd() {
   const r = calc(), L = [];
-  L.push('# 我的家庭资产配置体检', '', `用慢复利「家庭资产配置体检」整理，${stamp()}。金额单位：万元。下面的数是按一套方法算出的参考，请帮我检查有没有漏掉的情况、哪些数值得再想想。不需要推荐具体的基金或产品。`, '');
+  L.push('# 我的家庭财务体检', '', `用慢复利「家庭财务体检」整理，${stamp()}。金额单位：万元。下面的数是按一套方法算出的参考，请帮我检查有没有漏掉的情况、哪些数值得再想想。不需要推荐具体的基金或产品。`, '');
   const fin = [['cash', defsOf('cash')], ['inv', defsOf('inv')]].flatMap(([g, defs]) => defs.filter(d => amt(g, d.k) > 0).map(d => `${d.name} ${amt(g, d.k)}（预期年化 ${rateOf(g, d)}%）`));
   L.push('## 资产总览', `- 家庭成员：${st.members.map(m => `${m.name || '家庭成员'}（${ROLEN[m.role]}，${m.age || '?'} 岁${n(m.income) ? `，税后年收入 ${n(m.income)}，${{ stable: '稳定', vol: '波动大', mkt: '跟着股市' }[m.itype]}` : ''}）`).join('、')}`,
     `- 金融资产：${fin.join('；') || '未填'}；加权约 ${pc(r.ret, 1)}`,

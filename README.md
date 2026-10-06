@@ -1,4 +1,4 @@
-# 家庭资产配置体检 · assets-checkup
+# 家庭财务体检 · household-checkup
 
 [English](README.en.md)
 
