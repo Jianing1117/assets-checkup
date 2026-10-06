@@ -554,7 +554,7 @@ function renderAll() {
 
 
 /* ── 体检报告 ── */
-/* 顺序：总评 → 家底 → 阶段 → 五层体检 → 钱该怎么放 → 行动清单 → 保存和分享；设计见 体检报告-设计.md */
+/* 顺序：总评 → 资产总览 → 阶段 → 五层体检 → 钱该怎么放 → 行动清单 → 保存和分享；设计见 体检报告-设计.md */
 const FID = [[22, 0], [30, 1], [40, 3], [50, 6], [60, 8], [67, 10]]; /* Fidelity 按年龄的储蓄倍数 */
 const fidelity = a => { if (a <= 22) return 0; if (a >= 67) return 10; for (let i = 1; i < FID.length; i++) { const [a1, v1] = FID[i - 1], [a2, v2] = FID[i]; if (a <= a2) return v1 + (v2 - v1) * (a - a1) / (a2 - a1) } return 10 };
 const freeBand = a => a < 30 ? [5, 15] : a < 40 ? [15, 30] : a < 50 ? [30, 50] : [50, 100]; /* AFP 培训口径：财务自由度按年龄 */
@@ -638,7 +638,7 @@ function renderReport(r, ready) {
   out('verdict', `<h2 class="hl">${head}</h2>${top ? `<p class="hs">最要紧的一件：${dims[top].fix}<a class="lk" href="#s-layers" style="margin-left:10px">看五层体检</a></p>` : ''}
     <div class="kpis">${kpi.map(([l, v, d]) => `<div class="kpi"><div class="l">${l}</div><div class="n">${big(v)}</div><div class="d">${d}</div></div>`).join('')}</div>`);
 
-  /* 2 家底 */
+  /* 2 资产总览 */
   const A = [['流动性资产', r.L, 'sky'], ['投资·稳健类', r.S, 'pink'], ['投资·股票、黄金和加密', r.K + r.G + r.X, 'mint'], ['房子', r.V, 'butter'], ['受限资产、股权和其他', r.R + r.PE + r.O, 'grey'], ['车', r.C, 'stone']];
   const Dd = [['房贷', r.mortBal, 'grey'], ['其他负债', Math.max(0, r.Dt - r.mortBal), 'stone']];
   const hS = r.TA > 0 ? r.V / r.TA : 0, fS = r.TA > 0 ? r.F / r.TA : 0;
@@ -948,7 +948,7 @@ function toMd() {
   const r = calc(), L = [];
   L.push('# 我的家庭资产配置体检', '', `用慢复利「家庭资产配置体检」整理，${stamp()}。金额单位：万元。下面的数是按一套方法算出的参考，请帮我检查有没有漏掉的情况、哪些数值得再想想。不需要推荐具体的基金或产品。`, '');
   const fin = [['cash', defsOf('cash')], ['inv', defsOf('inv')]].flatMap(([g, defs]) => defs.filter(d => amt(g, d.k) > 0).map(d => `${d.name} ${amt(g, d.k)}（预期年化 ${rateOf(g, d)}%）`));
-  L.push('## 家底', `- 家庭成员：${st.members.map(m => `${m.name || '家庭成员'}（${ROLEN[m.role]}，${m.age || '?'} 岁${n(m.income) ? `，税后年收入 ${n(m.income)}，${{ stable: '稳定', vol: '波动大', mkt: '跟着股市' }[m.itype]}` : ''}）`).join('、')}`,
+  L.push('## 资产总览', `- 家庭成员：${st.members.map(m => `${m.name || '家庭成员'}（${ROLEN[m.role]}，${m.age || '?'} 岁${n(m.income) ? `，税后年收入 ${n(m.income)}，${{ stable: '稳定', vol: '波动大', mkt: '跟着股市' }[m.itype]}` : ''}）`).join('、')}`,
     `- 金融资产：${fin.join('；') || '未填'}；加权约 ${pc(r.ret, 1)}`,
     `- 不好随时卖的：${defsOf('ill').filter(d => amt('ill', d.k) > 0).map(d => `${d.name} ${amt('ill', d.k)}${d.x && has(st.ill[d.k][d.x]) ? `（${d.xl} ${n(st.ill[d.k][d.x])}）` : ''}`).join('；') || '无'}（房子按九折记）`,
     `- 负债：${defsOf('debt').filter(d => has(st.debt[d.k].bal)).map(d => `${d.name} ${n(st.debt[d.k].bal)}（年化 ${n(st.debt[d.k].rate)}%，月还 ${n(st.debt[d.k].pay)}）`).join('；') || '无'}`,

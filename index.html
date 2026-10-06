@@ -219,7 +219,7 @@ details.rqd{margin-top:34px}
 .tb.fx .in.x2 .field{flex:1;min-width:0}
 @container (max-width:760px){.stages{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.stg .t{font-size:13px}.stg .lb{font-size:12px}.mods{gap:2px 22px}}
 @media print{.mod{display:block!important}.mods,.mnav{display:none!important}}
-/* ── 体检报告 v6：总评 → 家底 → 阶段 → 五层体检 → 钱该怎么放 → 行动清单 → 分享 ── */
+/* ── 体检报告 v6：总评 → 资产总览 → 阶段 → 五层体检 → 钱该怎么放 → 行动清单 → 分享 ── */
 :root{--trk:#F1F0EC}
 .hl{font-family:var(--display);font-weight:600;font-size:clamp(23px,2.5cqw,31px);line-height:1.42;text-wrap:balance}
 .hs{margin-top:10px;font-size:15.5px;line-height:1.8}
@@ -383,7 +383,7 @@ details.how p{padding:0}
 <section class="rv" style="padding-top:clamp(48px,8cqw,120px)">
   <div class="lb">LONG ARC · 投资配置 · TOOL</div>
   <h1 class="h1" style="margin-top:14px">家庭资产配置体检</h1><div class="rule"></div>
-  <p class="lead" style="margin-top:22px;max-width:36em">一次性的检查，分三部分：先填体检问卷，再看体检报告，最后可以写一页投资政策书。报告先给总评和家底，再告诉你在哪个财务阶段、五层里哪一层要先补、钱该怎么放，最后列出接下来要做的几件事，可以存成图片或 PDF。</p>
+  <p class="lead" style="margin-top:22px;max-width:36em">一次性的检查，分三部分：先填体检问卷，再看体检报告，最后可以写一页投资政策书。报告先给总评和资产总览，再告诉你在哪个财务阶段、五层里哪一层要先补、钱该怎么放，最后列出接下来要做的几件事，可以存成图片或 PDF。</p>
   <p class="s" style="margin-top:12px;max-width:42em">你填的数只存在这台设备的浏览器里，不会上传。换设备或清理浏览器之前，先备份数据。所有金额的单位都是万元。</p>
   <div class="bar no-print">
     <button type="button" class="lk" data-act="sample">填入示例家庭</button>
@@ -506,13 +506,13 @@ details.how p{padding:0}
 <!-- ══════════ 02 体检报告 ══════════ -->
 <div class="mod" data-mod="2">
 <section class="mhead" id="s-report"><div class="lb">02 · REPORT</div><h2 class="h1" style="margin-top:12px">体检报告</h2><p class="s" style="margin-top:12px" data-out="rmeta"></p>
-  <nav class="subnav no-print"><a class="lk" href="#s-verdict">总评</a><a class="lk" href="#s-balance">家底</a><a class="lk" href="#s-stage">阶段</a><a class="lk" href="#s-layers">五层体检</a><a class="lk" href="#s-advice">钱该怎么放</a><a class="lk" href="#s-actions">行动清单</a><a class="lk" href="#s-share">保存和分享</a></nav></section>
+  <nav class="subnav no-print"><a class="lk" href="#s-verdict">总评</a><a class="lk" href="#s-balance">资产总览</a><a class="lk" href="#s-stage">阶段</a><a class="lk" href="#s-layers">五层体检</a><a class="lk" href="#s-advice">钱该怎么放</a><a class="lk" href="#s-actions">行动清单</a><a class="lk" href="#s-share">保存和分享</a></nav></section>
 <section class="two stp" id="s-verdict">
   <div><div class="lb">VERDICT</div><p class="s" style="margin-top:6px">总评</p></div>
   <div data-out="verdict"></div>
 </section>
 <section class="two stp" id="s-balance">
-  <div><div class="lb">BALANCE</div><p class="s" style="margin-top:6px">家底</p></div>
+  <div><div class="lb">BALANCE</div><p class="s" style="margin-top:6px">资产总览</p></div>
   <div data-out="balance"></div>
 </section>
 <section class="two stp" id="s-stage">
