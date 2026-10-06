@@ -94,6 +94,7 @@ const workOf = d => d.custom ? st.inc[d.k].work !== '0' : !!d.work;
 const autoOf = (g, k) => { const d = GROUPS[g].find(x => x.k === k); return d && d.auto ? d.auto() : null };
 const amt = (g, k) => { const v = st[g][k].amt; if (has(v)) return n(v); const a = autoOf(g, k); return a === null ? 0 : a };
 const r2 = x => Math.round(x * 100) / 100;
+const lumpDue = d => d.bal * Math.pow(1 + d.rate / 100, Math.max(0, d.back - YEAR)); /* 没有月还款的负债：到填的年份连本带利一次还清 */
 /* 利息和理财收益：流动性资产和稳健类有现金利息，进今年的收入；股票、黄金、加密的涨跌不算 */
 const interestAuto = () => sum(defsOf('cash'), d => amt('cash', d.k) * rateOf('cash', d) / 100) + sum(defsOf('inv').filter(d => d.cls === 'S'), d => amt('inv', d.k) * rateOf('inv', d) / 100);
 const RE_W = 0.003; /* 沪深 300 里房地产行业的权重，中证指数 2026 年 8 月 31 日的指数单张 */
@@ -318,11 +319,12 @@ function calc() {
   r.payAuto = sum(debts, d => d.pay) * 12; r.payY = amt('exp', 'loan'); /* 支出表里的一行：预填负债的月还款，可以改 */
   r.high = debts.filter(d => d.rate > 6 && d.bal > 0);
   r.mid = debts.filter(d => d.rate >= 3 && d.rate <= 6 && d.bal > 0 && !d.home);
-  r.H = sum(r.high, d => d.bal); r.Dt = sum(debts, d => d.bal); r.pay = sum(debts, d => d.pay);
+  const kPay = r.payAuto > 0 ? r.payY / r.payAuto : 0; /* 支出表里的贷款月还款改过的：每笔按同样比例调，还清时间、负担率、本金都按调整后的算 */
+  r.H = sum(r.high, d => d.bal); r.Dt = sum(debts, d => d.bal); r.pay = r.payY / 12;
   r.mortBal = sum(debts.filter(d => d.home), d => d.bal);
   r.lumpDebts = debts.filter(d => d.pay <= 0 && d.bal > 0).map(d => ({ ...d, back: has(st.debt[d.k].back) ? Math.round(n(st.debt[d.k].back)) : 0 }));
   r.lumpNoYear = r.lumpDebts.filter(d => !d.back);
-  r.debts = debts.filter(d => d.pay > 0).map(d => d.bal > 0 ? d : { ...d, bal: Infinity }).map(d => { const i = d.rate / 1200, P = d.pay, B = d.bal; const m = i > 0 ? (B * i < P ? -Math.log(1 - B * i / P) / Math.log(1 + i) : Infinity) : B / P; return { ...d, years: m / 12 } });
+  r.debts = debts.filter(d => d.pay > 0).map(d => d.bal > 0 ? d : { ...d, bal: Infinity }).map(d => { const i = d.rate / 1200, P = d.pay * kPay, B = d.bal; const m = P <= 0 ? Infinity : i > 0 ? (B * i < P ? -Math.log(1 - B * i / P) / Math.log(1 + i) : Infinity) : B / P; return { ...d, payAdj: P, years: m / 12 } });
   /* 支出 */
   const dE = defsOf('exp');
   r.exp = sum(dE, d => amt('exp', d.k));
@@ -331,7 +333,6 @@ function calc() {
   r.surplus = r.inc - r.exp;
   r.freeSave = r.surplus - r.savPrem;
   /* 还掉的贷款本金算存下来（《账本 01》总储蓄率、AFP 储蓄率）：一年的月还款减去按现在余额算的利息 */
-  const kPay = r.payAuto > 0 ? r.payY / r.payAuto : 0; /* 支出表里的贷款月还款改过的，本金按同样比例算 */
   r.principal = sum(debts.filter(d => d.pay > 0 && d.bal > 0), d => clamp(d.pay * 12 * kPay - d.bal * d.rate / 100, 0, d.bal));
   r.saveTot = r.surplus + r.principal;
   r.saveR = r.inc > 0 ? r.saveTot / r.inc : NaN; r.freeR = r.inc > 0 ? r.freeSave / r.inc : NaN;
@@ -352,7 +353,7 @@ function calc() {
     if (p.use === 'edu' || p.use === 'eduA') r.eduFund += p.amt * fut;
     if (p.use === 'care') r.careFund += p.kind === 'once' ? (fut ? p.amt : 0) : p.amt * factor(fut);
   });
-  r.lumpDebts.filter(d => d.back && d.back - YEAR <= 5 && d.rate <= 6).forEach(d => { r.W += d.bal }); /* 五年内要一次还清的负债，和五年内的计划一样进稳钱 */
+  r.lumpDebts.filter(d => d.back && d.back - YEAR <= 5 && d.rate <= 6).forEach(d => { r.W += lumpDue(d) }); /* 五年内要一次还清的负债，按到期要还的本息进稳钱，和往后推扣的一样 */
   r.W = Math.max(0, r.W); r.hasBills = r.usdLow + r.usdFar > 0;
   /* 应急金和分账户 */
   r.months = has(st.months) ? n(st.months) : T.range[1];
@@ -466,6 +467,7 @@ function calc() {
   r.tStock = has(st.tStock) ? pct('tStock') : r.tStockDef;
   r.tGold = pct('tGold'); r.tCrypto = pct('tCrypto');
   r.tRest = 100 - r.tStock - r.tGold - r.tCrypto;
+  r.tOver = r.tRest < -.005; /* 三项加起来超过 100%：这一页还没完成 */
   return r;
 }
 
@@ -474,7 +476,7 @@ function fillYears(r, need) {
   if (!(need > 0)) return 0;
   let acc = 0;
   for (let t = 1; t <= 40; t++) {
-    const loans = r.payAuto > 0 ? sum(r.debts, d => d.pay * 12 * clamp(d.years - (t - 1), 0, 1)) * r.payY / r.payAuto : r.payY;
+    const loans = r.payAuto > 0 ? sum(r.debts, d => d.payAdj * 12 * clamp(d.years - (t - 1), 0, 1)) : r.payY;
     acc += r.freeSave + (r.payY - loans);
     if (acc >= need) return t;
   }
@@ -500,14 +502,14 @@ function simulate(r, kShift) {
     const wages = sum(r.wageBy, m => m.age + t < retire ? m.inc * Math.pow(1 + gs, t) : 0); /* 每个人到自己的退休年龄才停工资 */
     const inc = wages + (working ? r.workOther * Math.pow(1 + gs, t) : 0) + (r.passive0 - lentOff) * pi + (working ? 0 : pension * pi);
     const living = Math.max(0, living0 - (r.kidYears > 0 && t > r.kidYears ? r.eduRow : 0)) * Math.pow(1 + ge, t);
-    const loans = r.payAuto > 0 ? sum(r.debts, d => d.pay * 12 * clamp(d.years - (t - 1), 0, 1)) * r.payY / r.payAuto : r.payY;
+    const loans = r.payAuto > 0 ? sum(r.debts, d => d.payAdj * 12 * clamp(d.years - (t - 1), 0, 1)) : r.payY;
     const exp = living + loans;
     /* 计划：今年还没花的，算在第一年 */
     let ev = 0;
     r.plans.forEach(p => { const yrs = p.kind === 'once' ? 1 : p.years, on = yy => yy >= p.year && yy < p.year + yrs, sign = p.kind === 'inc' ? 1 : -1;
       if (on(y)) ev += sign * p.amt * pi; if (t === 1 && on(YEAR)) ev += sign * p.amt });
     if (r.lentBack && t === Math.max(1, r.lentBack - YEAR)) ev += r.lentAmt; /* 借出去的钱：按填的年份收回，金额不随通胀变 */
-    r.lumpDebts.forEach(d => { if (d.back && t === Math.max(1, d.back - YEAR)) ev -= d.bal * Math.pow(1 + d.rate / 100, Math.max(0, d.back - YEAR)) }); /* 没有月还款的负债：按填的年份连本带利一次还清 */
+    r.lumpDebts.forEach(d => { if (d.back && t === Math.max(1, d.back - YEAR)) ev -= lumpDue(d) }); /* 没有月还款的负债：按填的年份连本带利一次还清 */
     /* 受限资产（个人养老金、企业年金、储蓄险）退休前不能拿来付支出：单独增长，储蓄型保费存进去，退休那年并进来 */
     const sav = (premEnd ? y <= premEnd : working) ? r.savPrem : 0; /* 储蓄型保费交到填的年份；没填就交到退休 */
     F = F * (1 + rF) + inc - exp - sav + ev;
@@ -581,17 +583,17 @@ function renderAll() {
   out('short', r.shortPct > 0 ? `<p class="warn">五年内要用的 ${w(r.W)}里放 ${r.shortPct}% 股票，约 ${w(r.W * r.shortPct / 100)}。如果用钱那年刚好跌一半，会少 ${w(r.shortCost)}。A 股一次大跌加上涨回来，常常要好几年：沪深 300 从 2021 年 2 月的高点跌到 2024 年 9 月的低点，就用了三年半。</p>` : '');
   /* 03 投资政策书 */
   out('ips2', ready ? `长钱 ${w(r.long)}${r.R > 0 ? `，加上受限资产 ${w(r.R)}` : ''}。不包括 ${mo(r.months)}的应急金 ${w(r.E)}、五年内要用的稳钱 ${w(r.W)}、保险和自住房${r.PE > 0 ? `；股权投资 ${w(r.PE)}单独看，不参与再平衡` : ''}。` : '填完前面的内容，这里会自动写上。');
-  out('ips5', ready ? `股票部分最多可能跌一半，按现在的目标，账面会少约 ${w(r.tStock / 100 * r.F * .5)}${M > 0 ? `，相当于 ${mo(r.tStock / 100 * r.F * .5 / M)}的必需支出` : ''}。这是我事先就接受的。` : '填完前面的内容，这里会自动写上。');
+  out('ips5', r.tOver ? '目标配置的三项加起来超过了 100%，改好以后这里会自动写上。' : ready ? `股票部分最多可能跌一半，按现在的目标，账面会少约 ${w(r.tStock / 100 * r.F * .5)}${M > 0 ? `，相当于 ${mo(r.tStock / 100 * r.F * .5 / M)}的必需支出` : ''}。这是我事先就接受的。` : '填完前面的内容，这里会自动写上。');
   const ti = D.querySelector('[data-k="tStock"]'); if (ti) ti.placeholder = r.tStockDef;
-  let i6 = `<p class="s" style="margin-top:10px">比例都按全部金融资产 ${w(r.F)}算，剩下的 ${Math.round(r.tRest)}% 是现金和债券类。股票类默认 ${r.tStockDef}%，就是长钱里的 ${w(r.stock)}。</p>`;
+  let i6 = r.tOver ? `<p class="warn">股票类 ${r.tStock}%、黄金 ${r.tGold}%、加密资产 ${r.tCrypto}%，加起来是 ${Math.round((r.tStock + r.tGold + r.tCrypto) * 10) / 10}%，超过了 100%。这一页还没完成：先把三项改到加起来不超过 100%，剩下的就是现金和债券类。</p>`
+    : `<p class="s" style="margin-top:10px">比例都按全部金融资产 ${w(r.F)}算，剩下的 ${Math.round(r.tRest)}% 是现金和债券类。股票类默认 ${r.tStockDef}%，就是长钱里的 ${w(r.stock)}。</p>`;
   if (r.tGold > r.goldCapPct * 100 + .01) i6 += `<p class="warn">黄金 ${r.tGold}% 超过了你算出的上限 ${pc(r.goldCapPct)}。</p>`;
   if (r.tCrypto > r.cryptoCapPct * 100 + .01) i6 += `<p class="warn">加密资产 ${r.tCrypto}% 超过了你算出的上限 ${pc(r.cryptoCapPct, 1)}。</p>`;
   if (r.tBad.length) { const TN = { tStock: '股票类', tGold: '黄金', tCrypto: '加密资产' }; i6 += `<p class="warn">比例要在 0 到 100% 之间：${r.tBad.map(k => `${TN[k]}填的是 ${n(st[k])}%，按 ${clamp(n(st[k]), 0, 100)}% 算`).join('；')}。</p>` }
-  if (r.tRest < 0) i6 += `<p class="warn">加起来超过了 100%。</p>`;
-  if (has(st.tStock) && r.tStock > r.tStockDef + .5 && ready) i6 += `<p class="warn">比按方法算出的 ${r.tStockDef}% 高。跌一半时会少 ${w(r.tStock / 100 * r.F * .5)}，先确认自己拿得住。</p>`;
+  if (!r.tOver && has(st.tStock) && r.tStock > r.tStockDef + .5 && ready) i6 += `<p class="warn">比按方法算出的 ${r.tStockDef}% 高。跌一半时会少 ${w(r.tStock / 100 * r.F * .5)}，先确认自己拿得住。</p>`;
   out('ips6', i6);
   const g = r.tGold, band = g > 0 ? `，黄金 ${Math.round(g * .8 * 10) / 10}% 到 ${Math.round(g * 1.2 * 10) / 10}%` : '';
-  out('ips9', `每年 ${st.ipsMonth} 月检查一次。股票类在 ${Math.max(0, r.tStock - 5)}% 到 ${Math.min(100, r.tStock + 5)}% 之间不动${band}${r.tCrypto > 0 ? `，加密资产超过目标的 1.5 倍（${Math.round(r.tCrypto * 1.5 * 10) / 10}%）就卖回目标` : ''}；超出范围才再平衡，调回目标。资金顺序：新存下的钱 → 分红和利息 → 最后才卖出超配的部分。${ART('alloc-rebalance', '见《配置 07》')}`);
+  out('ips9', r.tOver ? `每年 ${st.ipsMonth} 月检查一次。目标配置改好以后，这里会写上不用动的范围。` : `每年 ${st.ipsMonth} 月检查一次。股票类在 ${Math.max(0, r.tStock - 5)}% 到 ${Math.min(100, r.tStock + 5)}% 之间不动${band}${r.tCrypto > 0 ? `，加密资产超过目标的 1.5 倍（${Math.round(r.tCrypto * 1.5 * 10) / 10}%）就卖回目标` : ''}；超出范围才再平衡，调回目标。资金顺序：新存下的钱 → 分红和利息 → 最后才卖出超配的部分。${ART('alloc-rebalance', '见《配置 07》')}`);
 
   renderReport(r, ready);
 }
@@ -1015,7 +1017,7 @@ function toMd() {
   L.push('', '## 配置', `- 类型：${r.T.name}；按 ${r.age} 岁算`, `- 四个账户：活钱 ${w(r.E)}（${r.months} 个月），稳钱 ${w(r.W)}，长钱 ${w(r.long)}${r.H ? `；先还高息负债 ${w(r.H)}` : ''}`,
     `- 长钱里股票 ${r.s}%，约 ${w(r.stock)}；跌一半少 ${w(r.dd)}`, `- 黄金上限 ${w(r.goldCap)}；加密资产上限 ${w(r.cryptoCap)}；美元下限 ${w(r.usdLow)}`);
   if (r.er.length || r.sr.length) L.push(`- 提醒：${[...r.er, ...r.sr].join('、')}`);
-  L.push(`- 投资政策书：股票类 ${r.tStock}%，黄金 ${r.tGold}%，加密资产 ${r.tCrypto}%，现金和债券类 ${Math.round(r.tRest)}%；每年 ${st.ipsMonth} 月检查`);
+  L.push(r.tOver ? '- 投资政策书：目标配置三项加起来超过 100%，还没完成' : `- 投资政策书：股票类 ${r.tStock}%，黄金 ${r.tGold}%，加密资产 ${r.tCrypto}%，现金和债券类 ${Math.round(r.tRest)}%；每年 ${st.ipsMonth} 月检查`);
   [['ips1', '这笔钱为了什么'], ['ips3', '谁来决定'], ['ips4', '对收益的预期'], ['ips7', '工具和禁区'], ['ips8', '执行规则']].forEach(([k, t]) => st[k] && L.push(`- ${t}：${st[k]}`));
   if (r.age > 0) { const mid = simulate(r, 0); L.push('', '## 往后推（中间情景）', `- 假设：${nv(st.retire, 60)} 岁退休，工资每年涨 ${nv(st.gs, 2)}%，支出每年涨 ${nv(st.ge, 2)}%，通胀 ${nv(st.infl, 2)}%，组合收益约 ${pc(mid.rp, 1)}`, `- ${mid.broke ? `${mid.broke} 岁左右钱用完` : `够用到 ${nv(st.endAge, 90)} 岁`}`) }
   return L.join('\n') + '\n';
