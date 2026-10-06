@@ -1,4 +1,4 @@
-# 家庭财务体检 · household-checkup
+# 家庭财务体检 · Household Financial Checkup
 
 [English](README.en.md)
 

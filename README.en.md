@@ -1,4 +1,4 @@
-# Household Financial Checkup · household-checkup
+# Household Financial Checkup
 
 [中文](README.md)
 
