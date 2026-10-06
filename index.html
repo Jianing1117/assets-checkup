@@ -371,6 +371,8 @@ details.how p{padding:0}
   .mini td.s{display:none}
 }
 @media print{body.pr2 .mod:not([data-mod="2"]){display:none!important}.an,.rb,.kpis{break-inside:avoid}}
+/* 自动算的数被改过：提示自动算出来是多少 */
+.ov{font-size:12.5px;line-height:1.6;color:var(--ink-blue);margin-top:6px}.ov:empty{display:none}.ov button{background:none;border:0;border-bottom:1px solid transparent;padding:0;font:inherit;color:var(--ink-blue);cursor:pointer;margin-left:6px}.ov button:hover{border-bottom-color:currentColor}
 /* 公开版：页头只留两个链接，手机上也显示 */
 .nav a.n.pub{display:inline!important}
 @container (max-width:760px){.nav{gap:24px}}
@@ -421,14 +423,14 @@ details.how p{padding:0}
     <div class="h3 grp">投资</div><p class="s">按资产类型分三类。稳健类的利息和理财收益，按预期年化自动算进收入；股票、黄金、加密的预期年化是长期平均，含涨跌和分红，只用来往后推，不算进每年的收入。哪些钱是五年内要用的稳钱、哪些是长钱，报告里再按用途分。</p>
     <div data-fixed="inv"></div>
     <div class="fs">
-      <label class="f"><span>上面这些里面，美元资产一共多少</span><em>美元存款、美元理财、美股和美股基金，折成人民币。预填的是「海外股票和 ETF」那一行，定期、理财里有美元的，加上</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="usdAmt"><span class="u">万元</span></div></label>
+      <label class="f"><span>上面这些里面，美元资产一共多少</span><em>美元存款、美元理财、美股和美股基金，折成人民币。预填的是「海外股票和 ETF」那一行，定期、理财里有美元的，加上</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="usdAmt"><span class="u">万元</span></div><div class="ov" data-out="ov-usdAmt"></div></label>
     </div>
     <div data-out="assetsum"></div>
     <p class="s" style="margin-top:10px">默认值都偏保守：活期按 0；货币基金和定期按 1.2%，接近 1 年期定存（2026 年 6 月）；国债、理财、债券基金按 1.7%，接近 10 年期国债（2026 年 9 月 30 日约 1.68%）；美元存款和美元理财的利率通常比人民币高，记进定期、理财那两行时，可以把预期年化改成实际的大概数；股票类按 5.3%，取《收益 02》给沪深 300 估的十年区间的偏下沿；黄金没有现金流，按只跟上通胀算；加密资产不假设增长。</p>
     <div class="h3 grp">不好随时卖的</div><p class="s">不参与分账户，但算进净资产。最后一列的租金、分红和利息会带到「收入」，储蓄险的保费算进应急金。公积金不用填，体检里不算它。</p>
     <div data-fixed="ill"></div>
     <div class="fs">
-      <label class="f"><span>金融资产里，和房地产相关的部分</span><em>房企的股票和债券、主要投向房地产的理财或信托，按实际改。预填的数按股票和股票基金的 0.3% 估，这是沪深 300 里房地产的权重（2026 年 8 月）</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="reFin"><span class="u">万元</span></div></label>
+      <label class="f"><span>金融资产里，和房地产相关的部分</span><em>房企的股票和债券、主要投向房地产的理财或信托，按实际改。预填的数按股票和股票基金的 0.3% 估，这是沪深 300 里房地产的权重（2026 年 8 月）</em><div class="in"><input class="field auto" type="text" inputmode="decimal" data-k="reFin"><span class="u">万元</span></div><div class="ov" data-out="ov-reFin"></div></label>
     </div>
     <div data-out="unitwarn"></div>
   </div>

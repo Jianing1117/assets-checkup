@@ -40,7 +40,7 @@ const A_ILL = [
   { k: 'invh', name: '投资房', cls: 'inv', note: '几套合计，同样按成交价', x: 'inc', xl: '每年净租金' },
   { k: 'car', name: '车', cls: 'C', note: '二手估价' },
   { k: 'pen', name: '个人养老金、企业年金', cls: 'R' },
-  { k: 'sav', name: '储蓄险的现金价值', cls: 'R', note: '年金险、增额终身寿这类；按现金价值，不按已交的保费', x: 'prem', xl: '每年还要交的保费' },
+  { k: 'sav', name: '储蓄险的现金价值', cls: 'R', note: '年金险、增额终身寿这类；按现金价值，不按已交的保费。交到哪年空着，就按退休那年算', x: 'prem', xl: '每年还要交的保费', x2: 'premEnd', xl2: '交到哪年' },
   { k: 'biz', name: '自己的生意和股权投资', cls: 'PE', note: '非上市股权、私募股权、未解禁的股票和期权', x: 'inc', xl: '每年分到的钱' },
   { k: 'lent', name: '借出去的钱', cls: 'O', note: '按估计能收回的金额；填了哪年收回，往后推时那一年算进能动用的钱', x: 'inc', xl: '每年收到的利息', x2: 'back', xl2: '哪年收回' },
   { k: 'oth', name: '信托、收藏品等其他', cls: 'O' }];
@@ -51,8 +51,8 @@ const DEBT = [
   { k: 'cons', name: '消费贷' },
   { k: 'biz', name: '经营贷', note: '挂在个人名下的' },
   { k: 'card', name: '信用卡分期、花呗、白条', note: '每月全额还清的账单不算' },
-  { k: 'fam', name: '亲友借款', note: '没有固定还款的，月还款空着' },
-  { k: 'oth', name: '其他' }];
+  { k: 'fam', name: '亲友借款', note: '没有固定还款的，月还款空着，填上哪年还清', back: 1 },
+  { k: 'oth', name: '其他', back: 1 }];
 const EXP = [
   { k: 'daily', name: '日常生活', note: '吃饭、日用、交通、物业水电、通讯', need: 1 },
   { k: 'rent', name: '房租', need: 1 },
@@ -87,7 +87,7 @@ const R_RATE = 1.7; /* 受限资产往后推的年化，和债券类一样 */
 const rateDef = d => d.r === null ? nv(st.infl, 2) : d.r;
 const rateOf = (g, d) => has(st[g][d.k].rate) ? n(st[g][d.k].rate) : rateDef(d);
 /* 用户自己加的一行：归类跟着加在哪一块 */
-const UDEF = { cash: { cls: 'L', r: 0 }, fi: { cls: 'S', r: 1.2 }, eq: { cls: 'K', r: 5.3 }, alt: { cls: 'G', r: 0 }, ill: { cls: 'O', x: 'inc', xl: '每年的收入' }, debt: {}, exp: { need: 1 }, inc: {} };
+const UDEF = { cash: { cls: 'L', r: 0 }, fi: { cls: 'S', r: 1.2 }, eq: { cls: 'K', r: 5.3 }, alt: { cls: 'G', r: 0 }, ill: { cls: 'O', x: 'inc', xl: '每年的收入' }, debt: { back: 1 }, exp: { need: 1 }, inc: {} };
 const customs = g => Object.keys(st[g]).filter(k => st[g][k] && st[g][k].custom).map(k => ({ k, name: st[g][k].name || '自己加的一项', custom: 1, sg: st[g][k].sg, ...UDEF[g === 'inv' ? st[g][k].sg : g] }));
 const defsOf = g => g === 'inv' ? ['fi', 'eq', 'alt'].flatMap(sg => [...A_INV.filter(d => d.sg === sg), ...customs(g).filter(d => d.sg === sg)]) : [...GROUPS[g], ...customs(g)];
 const workOf = d => d.custom ? st.inc[d.k].work !== '0' : !!d.work;
@@ -202,7 +202,8 @@ function renderFixed(g) {
     if (c.f === 'ret') return d.custom ? `<td data-l="${c.l}"><select class="field" ${a('work')}><option value="1"${workOf(d) ? ' selected' : ''}>停</option><option value="0"${workOf(d) ? '' : ' selected'}>照常</option></select></td>` : `<td data-l="${c.l}" class="s">${d.work ? '停' : '照常'}</td>`;
     if (c.f === 'need') { const on = needOf(d); return `<td data-l="${c.l}"><select class="field" ${a('need')}><option value="1"${on ? ' selected' : ''}>还要付</option><option value="0"${on ? '' : ' selected'}>可以停</option></select></td>` }
     if (c.f === 'x') return d.x ? `<td data-l="${d.xl}">${numIn(a(d.x), v[d.x], d.xl)}${d.x2 ? `<div class="in x2">${numIn(a(d.x2), v[d.x2], d.xl2)}<span class="u">年</span></div>` : ''}</td>` : `<td class="na" data-l="">　</td>`;
-    if (d.auto && c.f === 'amt') return `<td data-l="${c.l}">${numIn(a('amt'), v.amt, r2(d.auto()), 'auto')}</td>`;
+    if (d.auto && c.f === 'amt') return `<td data-l="${c.l}">${numIn(a('amt'), v.amt, r2(d.auto()), 'auto')}<div class="ov" data-ov="${g}|${d.k}"></div></td>`;
+    if (c.f === 'pay' && d.back) return `<td data-l="${c.l}">${numIn(a('pay'), v.pay)}<div class="in x2">${numIn(a('back'), v.back, '哪年还清')}<span class="u">年</span></div></td>`;
     return `<td data-l="${c.l}">${numIn(a(c.f), v[c.f], c.ph ? c.ph(d) : undefined)}</td>`;
   };
   const defs = defsOf(g), nc = cols.length + 1;
@@ -297,10 +298,19 @@ function calc() {
   const aged = adults.filter(m => has(m.age));
   r.ageAuto = aged.length ? sum(aged, m => n(m.age)) / aged.length : 0;
   r.age = Math.round(has(st.ageOverride) ? n(st.ageOverride) : r.ageAuto);
+  /* 退休按人算：每个人到自己的退休年龄才停工资；往后推的时间轴按主要收入者的年龄排 */
+  r.retire = nv(st.retire, 60);
+  const mainM = adults.find(m => m.role === 'main' && has(m.age));
+  r.refAge = mainM ? Math.round(n(mainM.age)) : r.age;
+  r.retiredNow = r.refAge > 0 && r.refAge >= r.retire;
+  r.pensionNow = r.retiredNow ? n(st.pension) : 0; /* 已经退休的家庭，养老金算进现在的收入 */
+  r.wageBy = earners.map(m => ({ inc: n(m.income), age: has(m.age) ? n(m.age) : r.age }));
   r.wage = sum(st.members, m => n(m.income));
   const extraInc = defsOf('inc').filter(d => d.custom);
   r.work = r.wage + amt('inc', 'side') + sum(extraInc.filter(workOf), d => amt('inc', d.k));
-  r.passive = amt('inc', 'pas') + r.assetInc + sum(extraInc.filter(d => !workOf(d)), d => amt('inc', d.k));
+  r.passive0 = amt('inc', 'pas') + r.assetInc + sum(extraInc.filter(d => !workOf(d)), d => amt('inc', d.k));
+  r.passive = r.passive0 + r.pensionNow;
+  r.workOther = r.work - r.wage; /* 副业等工作收入：跟着主要收入者退休停 */
   r.inc = r.work + r.passive + r.interest;
   /* 负债：按月还的，月还款都进支出 */
   const debts = defsOf('debt').map(d => ({ ...d, bal: n(st.debt[d.k].bal), rate: n(st.debt[d.k].rate), pay: n(st.debt[d.k].pay) }));
@@ -310,6 +320,8 @@ function calc() {
   r.mid = debts.filter(d => d.rate >= 3 && d.rate <= 6 && d.bal > 0 && !d.home);
   r.H = sum(r.high, d => d.bal); r.Dt = sum(debts, d => d.bal); r.pay = sum(debts, d => d.pay);
   r.mortBal = sum(debts.filter(d => d.home), d => d.bal);
+  r.lumpDebts = debts.filter(d => d.pay <= 0 && d.bal > 0).map(d => ({ ...d, back: has(st.debt[d.k].back) ? Math.round(n(st.debt[d.k].back)) : 0 }));
+  r.lumpNoYear = r.lumpDebts.filter(d => !d.back);
   r.debts = debts.filter(d => d.pay > 0).map(d => d.bal > 0 ? d : { ...d, bal: Infinity }).map(d => { const i = d.rate / 1200, P = d.pay, B = d.bal; const m = i > 0 ? (B * i < P ? -Math.log(1 - B * i / P) / Math.log(1 + i) : Infinity) : B / P; return { ...d, years: m / 12 } });
   /* 支出 */
   const dE = defsOf('exp');
@@ -319,7 +331,8 @@ function calc() {
   r.surplus = r.inc - r.exp;
   r.freeSave = r.surplus - r.savPrem;
   /* 还掉的贷款本金算存下来（《账本 01》总储蓄率、AFP 储蓄率）：一年的月还款减去按现在余额算的利息 */
-  r.principal = sum(debts.filter(d => d.pay > 0 && d.bal > 0), d => clamp(d.pay * 12 - d.bal * d.rate / 100, 0, d.bal));
+  const kPay = r.payAuto > 0 ? r.payY / r.payAuto : 0; /* 支出表里的贷款月还款改过的，本金按同样比例算 */
+  r.principal = sum(debts.filter(d => d.pay > 0 && d.bal > 0), d => clamp(d.pay * 12 * kPay - d.bal * d.rate / 100, 0, d.bal));
   r.saveTot = r.surplus + r.principal;
   r.saveR = r.inc > 0 ? r.saveTot / r.inc : NaN; r.freeR = r.inc > 0 ? r.freeSave / r.inc : NaN;
   r.eduRow = amt('exp', 'edu'); r.prem = amt('exp', 'prem'); r.once = amt('exp', 'once');
@@ -328,14 +341,18 @@ function calc() {
   r.W = 0; r.later = []; r.usdLow = 0; r.usdFar = 0; r.eduFund = 0; r.careFund = 0;
   r.plans.filter(p => p.kind !== 'inc').forEach(p => {
     const yrs = p.kind === 'once' ? 1 : p.years, abroad = p.use === 'eduA' || p.use === 'abroad';
+    let fut = 0;
     for (let k = 0; k < yrs; k++) {
       const y = p.year + k;
       if (y >= YEAR && y - YEAR <= 5) r.W += p.amt; else if (y - YEAR > 5 && !r.later.includes(p)) r.later.push(p);
+      if (y < YEAR) continue; /* 已经过去的年份，不再算进美元需要、教育金和赡养 */
+      fut++;
       if (abroad) { if (p.sure === '1' && y - YEAR <= 3) r.usdLow += p.amt; else r.usdFar += p.amt }
     }
-    if (p.use === 'edu' || p.use === 'eduA') r.eduFund += p.amt * yrs;
-    if (p.use === 'care') r.careFund += p.kind === 'once' ? p.amt : p.amt * factor(yrs);
+    if (p.use === 'edu' || p.use === 'eduA') r.eduFund += p.amt * fut;
+    if (p.use === 'care') r.careFund += p.kind === 'once' ? (fut ? p.amt : 0) : p.amt * factor(fut);
   });
+  r.lumpDebts.filter(d => d.back && d.back - YEAR <= 5 && d.rate <= 6).forEach(d => { r.W += d.bal }); /* 五年内要一次还清的负债，和五年内的计划一样进稳钱 */
   r.W = Math.max(0, r.W); r.hasBills = r.usdLow + r.usdFar > 0;
   /* 应急金和分账户 */
   r.months = has(st.months) ? n(st.months) : T.range[1];
@@ -347,7 +364,8 @@ function calc() {
   r.nowLong = r.K + r.G + r.X;
   r.lowNeed = r.E + r.H + r.W; r.lowNow = r.L + r.S; r.lowGap = r.lowNeed - r.lowNow;
   /* 股票 */
-  r.base = 100 - r.age; r.s = clamp(r.base + T.adj, 0, 100);
+  r.zero = r.risk.zero && r.tk === 'cons'; /* 「一分都不能亏」：长钱不放股票，报告里再对比放一成的结果 */
+  r.base = 100 - r.age; r.s = r.zero ? 0 : clamp(r.base + T.adj, 0, 100);
   r.stock = r.s / 100 * r.long; r.dd = r.stock * .5; r.curDD = r.K * .5;
   r.shortPct = n(st.shortStock); r.shortCost = r.W * r.shortPct / 100 * .5;
   /* 黄金、加密 */
@@ -386,7 +404,8 @@ function calc() {
       const others = wageSum - inc;
       o.gapDef = Math.max(0, r.expEx - r.expEx / nPeople - others * .5);
       o.gap = has(m.gap) ? n(m.gap) : o.gapDef;
-      o.gapYears = has(m.gapYears) ? n(m.gapYears) : r.kidYears;
+      o.yearsDef = r.kidYears > 0 ? r.kidYears : (o.gap > .05 ? Math.max(0, r.retire - (has(m.age) ? n(m.age) : r.age)) : 0); /* 《保障 03》：补到最小的孩子 22 岁；没有孩子、但有人靠他的收入的，补到他退休 */
+      o.gapYears = has(m.gapYears) ? n(m.gapYears) : o.yearsDef;
       o.f = factor(o.gapYears);
       if (m.role === 'main') { o.share = 1; o.debt = r.Dt; o.eduPart = r.edu; o.carePart = r.care; o.minus = r.assetsAfterE }
       else { o.share = wageSum > 0 ? inc / wageSum : 0; o.debt = r.Dt * o.share; o.eduPart = 0; o.carePart = 0; o.minus = 0 }
@@ -400,6 +419,7 @@ function calc() {
   /* 没人靠他的收入生活、也没有负债的，算出来寿险需要是 0，就不算缺定期寿险 */
   r.miss.forEach(x => { const o = r.ins.find(z => z.m === x.m); if (o && o.lifeNeed !== undefined && o.lifeNeed <= .05) x.lack = x.lack.filter(k => k !== 'sx') });
   r.insGap = r.miss.some(x => x.lack.length);
+  r.insOK = st.members.length > 0 && !r.insGap && !r.ins.some(o => (o.lifeGap || 0) > .05 || (o.ciGap || 0) > .05); /* 和五层里的「风险保障」同一个判断 */
   /* 能不能承受：从前面的数算，只提醒 */
   const er = [], sr = [];
   if (earners.some(m => m.itype !== 'stable')) er.push('收入波动大');
@@ -418,7 +438,9 @@ function calc() {
   r.wr = nv(st.wr, 3.5) / 100;
   r.fi = r.wr > 0 ? Math.max(0, r.expEx - r.passive) / r.wr : 0; /* 《账本 04》：每年支出按退休后的样子估，那时贷款已经还完，一次性支出也不算 */
   r.longTotal = r.long + r.R;
-  r.prog = r.fi > 0 ? r.longTotal / r.fi : NaN;
+  r.fiFree = r.wr > 0 && r.expEx > 0 && r.passive >= r.expEx; /* 不工作也有的收入已经够付以后每年的支出 */
+  r.prog = r.fi > 0 ? r.longTotal / r.fi : (r.fiFree ? Infinity : NaN);
+  r.fi5 = r.fi > 0 ? r.fi * 5 : (r.wr > 0 ? 5 * r.expEx / r.wr : 0); /* 被动收入已经够的，5 倍按不扣被动收入的数算 */
   /* 阶段 */
   r.stages = [
     { name: '财务摸底', slug: 'ledger-sheets', note: '看清家底，堵住漏洞',
@@ -426,28 +448,43 @@ function calc() {
       acts: ['按过去 12 个月把收支记清楚，分出「要付」和「可以停」', '从可以停的支出里先砍一项，让每年有结余', '还掉年化超过 6% 的负债', '在随时能取的地方先攒够一个月的必需支出'], conds: [[r.surplus > 0, '每年有结余'], [r.H === 0, '没有年化超过 6% 的负债'], [r.M > 0 && r.L / r.M >= 1, '随时能取的钱够一个月的必需支出']] },
     { name: '安全筑基', slug: 'ledger-buckets', note: '应急金、保障和五年内要花的钱都备好',
       reads: [['ledger-buckets', '账本 02｜家庭资金分四个账户', '按什么时候要用，把钱分开'], ['shield-order', '保障 02｜保险的配置顺序', '先保障后储蓄，先大人后孩子'], ['shield-amount', '保障 03｜保额怎么算', '寿险和重疾险该买多少'], ['wealth-ruin', '财富观 04｜杠杆与破产风险', '先保证不出局']],
-      acts: ['应急金补到你选的月数', '按家人逐个配齐基础保障，保额照报告里的缺口补', '五年内要花的钱，按年份放进对应到期的定期或国债', '设一个发薪日自动转账，让钱自己往下流'], conds: [[!r.insGap && st.members.length > 0, '每个人的基础保障配齐'], [r.lowGap <= .05, '应急金和五年内要花的钱都备好了']] },
+      acts: ['应急金补到你选的月数', '按家人逐个配齐基础保障，保额照报告里的缺口补', '五年内要花的钱，按年份放进对应到期的定期或国债', '设一个发薪日自动转账，让钱自己往下流'], conds: [[r.insOK, '每个人的基础保障配齐，保额也够'], [r.lowGap <= .05, '应急金和五年内要花的钱都备好了']] },
     { name: '积累增长', slug: 'alloc-ratio', note: '长钱按比例投出去，靠储蓄和时间慢慢攒',
       reads: [['alloc-ratio', '配置 04｜股债比例怎么定', '长钱里股票放多少'], ['alloc-why', '配置 01｜资产配置为什么排在选股前面', '组合的起伏主要来自大类比例'], ['return-fees', '收益 04｜费用的复利', '1% 的费率三十年会吃掉多少'], ['behave-timing', '行为 02｜择时有多难', '一次性投入还是定投'], ['behave-ips', '行为 05｜投资政策书', '一页纸写下自己的规则']],
-      acts: ['按报告里的股票比例，把长钱分几个月投出去', '写好投资政策书，和家人一起签字', '每月发薪后自动定投，不看短期涨跌', '每年复核一次比例和保额'], conds: [[r.prog >= 1, '长期的钱达到财务自由数字，不必再为钱工作']] },
+      acts: ['按报告里的股票比例，把长钱分几个月投出去', '写好投资政策书，和家人一起签字', '每月发薪后自动定投，不看短期涨跌', '每年复核一次比例和保额'], conds: [[r.prog >= 1, r.fiFree ? '不工作也有的收入，已经够付每年的支出' : '长期的钱达到财务自由数字，不必再为钱工作']] },
     { name: '配置管理', slug: 'alloc-rebalance', note: '工作变成选择，重点从攒钱转向管好比例、再平衡和币种',
       reads: [['alloc-rebalance', '配置 07｜再平衡', '定期检查，超出范围才动手'], ['alloc-correlation', '配置 03｜分散化与相关性', '危机时分散为什么会暂时失灵'], ['global-usd', '全球 01｜为什么要配置美元资产', '账单币种和汇率风险'], ['tool-gold', '工具 06｜黄金的作用', '一份应对极端风险的保险'], ['ledger-goals', '账本 04｜财务自由需要多少钱', '提取率要往下留余地']],
-      acts: ['按投资政策书的规则定期检查，偏离超出范围就再平衡', '看看币种和市场是不是太集中在一处', '按 3% 到 3.5% 的提取率规划每年取多少', '少放和收入、房子同一个方向的风险'], conds: [[r.prog >= 5, '长期的钱达到财务自由数字的 5 倍，够几代人用']] },
+      acts: ['按投资政策书的规则定期检查，偏离超出范围就再平衡', '看看币种和市场是不是太集中在一处', '按 3% 到 3.5% 的提取率规划每年取多少', '少放和收入、房子同一个方向的风险'], conds: [[r.fi5 > 0 && r.longTotal >= r.fi5, '长期的钱达到财务自由数字的 5 倍，够几代人用']] },
     { name: '家族传承', slug: 'legacy-tools', note: '钱已经超出自己一代的需要，重点转向税务、传承和下一代',
       reads: [['legacy-tools', '传承 05｜家族信托、保险金信托与遗嘱', '传承工具怎么选'], ['legacy-residency', '传承 02｜税收居民怎么判定', '183 天与双重居民'], ['legacy-crs', '传承 01｜CRS 是什么', '海外账户信息怎样交换回国内'], ['legacy-income', '传承 03｜境外所得怎么交个税', '税率、抵免与申报'], ['global-tax', '全球 03｜持有美股的美国税', '股息预扣与遗产税']],
       acts: ['把产权、受益人和每个账户的位置梳理清楚', '了解跨境资产的税务和申报', '比较家族信托、保险金信托和遗嘱，选适合自己的', '和家人一起写下对这笔钱的想法'], conds: [] }];
   r.stage = r.stages.findIndex(s => s.conds.some(c => !c[0])); if (r.stage < 0) r.stage = 4;
   /* 投资政策书 */
   r.tStockDef = r.F > 0 ? Math.round(r.stock / r.F * 100) : 0;
-  r.tStock = has(st.tStock) ? n(st.tStock) : r.tStockDef;
-  r.tGold = n(st.tGold); r.tCrypto = n(st.tCrypto);
+  const pct = k => clamp(n(st[k]), 0, 100);
+  r.tBad = ['tStock', 'tGold', 'tCrypto'].filter(k => has(st[k]) && (n(st[k]) < 0 || n(st[k]) > 100));
+  r.tStock = has(st.tStock) ? pct('tStock') : r.tStockDef;
+  r.tGold = pct('tGold'); r.tCrypto = pct('tCrypto');
   r.tRest = 100 - r.tStock - r.tGold - r.tCrypto;
   return r;
 }
 
+/* 补缺口要几年：只用能自由支配的结余（还掉的本金已经进了贷款，储蓄型保费进了保单），贷款还清以后腾出来的月还款也算 */
+function fillYears(r, need) {
+  if (!(need > 0)) return 0;
+  let acc = 0;
+  for (let t = 1; t <= 40; t++) {
+    const loans = r.payAuto > 0 ? sum(r.debts, d => d.pay * 12 * clamp(d.years - (t - 1), 0, 1)) * r.payY / r.payAuto : r.payY;
+    acc += r.freeSave + (r.payY - loans);
+    if (acc >= need) return t;
+  }
+  return null;
+}
+
 /* ── 往后推 ── */
 function simulate(r, kShift) {
-  const age0 = r.age, end = Math.max(age0 + 1, Math.round(nv(st.endAge, 90))), retire = nv(st.retire, 60);
+  const age0 = r.refAge, end = Math.max(age0 + 1, Math.round(nv(st.endAge, 90))), retire = r.retire;
+  const premEnd = has(st.ill.sav.premEnd) ? Math.round(n(st.ill.sav.premEnd)) : 0;
   const infl = nv(st.infl, 2) / 100, gs = nv(st.gs, 2) / 100, ge = nv(st.ge, 2) / 100;
   const growF = sum(defsOf('cash'), d => amt('cash', d.k) * rateOf('cash', d) / 100) + sum(defsOf('inv'), d => amt('inv', d.k) * (rateOf('inv', d) + (d.cls === 'K' ? kShift : 0)) / 100);
   const rF = r.F > 0 ? growF / r.F : R_RATE / 100, rR = R_RATE / 100;
@@ -458,9 +495,10 @@ function simulate(r, kShift) {
   let F = r.F, R = r.R, broke = null, merged = false;
   const out = [{ t: 0, age: age0, year: YEAR, A: A0, real: A0, inc: 0, exp: 0, ev: 0 }];
   for (let t = 1; t <= end - age0; t++) {
-    const age = age0 + t, y = YEAR + t, pi = Math.pow(1 + infl, t), working = age < retire;
+    const age = age0 + t, y = YEAR + t, pi = Math.pow(1 + infl, t), working = age < retire; /* working：主要收入者还没退休 */
     const lentOff = r.lentBack && y > r.lentBack ? Math.min(r.lentInc, r.assetInc) : 0; /* 借出去的钱收回以后，利息停 */
-    const inc = (working ? r.work * Math.pow(1 + gs, t) : 0) + (r.passive - lentOff) * pi + (working ? 0 : pension * pi);
+    const wages = sum(r.wageBy, m => m.age + t < retire ? m.inc * Math.pow(1 + gs, t) : 0); /* 每个人到自己的退休年龄才停工资 */
+    const inc = wages + (working ? r.workOther * Math.pow(1 + gs, t) : 0) + (r.passive0 - lentOff) * pi + (working ? 0 : pension * pi);
     const living = Math.max(0, living0 - (r.kidYears > 0 && t > r.kidYears ? r.eduRow : 0)) * Math.pow(1 + ge, t);
     const loans = r.payAuto > 0 ? sum(r.debts, d => d.pay * 12 * clamp(d.years - (t - 1), 0, 1)) * r.payY / r.payAuto : r.payY;
     const exp = living + loans;
@@ -469,8 +507,9 @@ function simulate(r, kShift) {
     r.plans.forEach(p => { const yrs = p.kind === 'once' ? 1 : p.years, on = yy => yy >= p.year && yy < p.year + yrs, sign = p.kind === 'inc' ? 1 : -1;
       if (on(y)) ev += sign * p.amt * pi; if (t === 1 && on(YEAR)) ev += sign * p.amt });
     if (r.lentBack && t === Math.max(1, r.lentBack - YEAR)) ev += r.lentAmt; /* 借出去的钱：按填的年份收回，金额不随通胀变 */
+    r.lumpDebts.forEach(d => { if (d.back && t === Math.max(1, d.back - YEAR)) ev -= d.bal * Math.pow(1 + d.rate / 100, Math.max(0, d.back - YEAR)) }); /* 没有月还款的负债：按填的年份连本带利一次还清 */
     /* 受限资产（个人养老金、企业年金、储蓄险）退休前不能拿来付支出：单独增长，储蓄型保费存进去，退休那年并进来 */
-    const sav = working ? r.savPrem : 0;
+    const sav = (premEnd ? y <= premEnd : working) ? r.savPrem : 0; /* 储蓄型保费交到填的年份；没填就交到退休 */
     F = F * (1 + rF) + inc - exp - sav + ev;
     R = R * (1 + rR) + sav;
     if (!working && !merged) { F += R; R = 0; merged = true }
@@ -505,12 +544,16 @@ function renderAll() {
   const ui = D.querySelector('[data-k="usdAmt"]'); if (ui) ui.placeholder = r2(amt('inv', 'os'));
   const ri = D.querySelector('[data-k="reFin"]'); if (ri) ri.placeholder = r2((amt('inv', 'stk') + amt('inv', 'sf')) * RE_W);
   D.querySelectorAll('.field.auto[data-g]').forEach(el => { const a = autoOf(el.dataset.g, el.dataset.row); if (a !== null) el.placeholder = r2(a) });
+  const ovTxt = (a, v, attr) => has(v) && Math.abs(n(v) - a) > .005 ? `自动算出来是 ${r2(a)}，现在用的是你填的数。<button type="button" class="lk" ${attr}>改回自动</button>` : '';
+  D.querySelectorAll('[data-ov]').forEach(el => { const [g, k] = el.dataset.ov.split('|'), a = autoOf(g, k); el.innerHTML = a === null ? '' : ovTxt(a, st[g][k].amt, `data-unauto="${g}|${k}"`) });
+  out('ov-usdAmt', ovTxt(amt('inv', 'os'), st.usdAmt, 'data-unautok="usdAmt"'));
+  out('ov-reFin', ovTxt((amt('inv', 'stk') + amt('inv', 'sf')) * RE_W, st.reFin, 'data-unautok="reFin"'));
   out('assetsum', r.F > 0 ? `<p class="s" style="margin-top:14px">金融资产合计 ${w(r.F)}，按每一项的预期年化加权，约 ${pc(r.ret, 1)}。</p>` : '');
   /* 投资偏好：建议的档位 */
   const rk = r.risk, sugN = rk.sugg ? TIER[rk.sugg].name : '';
   let rs = rk.done ? `<p class="verdict sm">按你的回答，建议「${sugN}」</p><p class="s" style="margin-top:6px">四道题共 ${rk.score} 分：4 分以下保守，5 到 8 分标准，9 分以上激进。${rk.capped && rk.score > 8 ? '没有股票投资经验、没经历过大跌或大跌时卖过的，建议最多到标准。' : ''}</p>`
     : `<p class="s">四道题答完，这里会给出建议的档位。</p>`;
-  if (rk.zero) rs += `<div class="tipb"><div class="lb">提醒</div><p>一分都不能亏的话，长钱里哪怕只放一成股票，也可能亏；完全不放，长期大概率跟不上通胀。报告里两种结果都会算给你看。</p></div>`;
+  if (rk.zero) rs += `<div class="tipb"><div class="lb">提醒</div><p>一分都不能亏的话，长钱里哪怕只放一成股票，也可能亏；完全不放，长期大概率跟不上通胀。${r.zero ? '所以报告按长钱不放股票来算，在「钱该怎么放」里把放一成股票的结果也列出来对比。' : `你选的是「${r.T.name}」，报告按这一档算。`}</p></div>`;
   out('risksugg', rs);
   let tn = '';
   if (st.tier && rk.sugg && TORD.indexOf(st.tier) > TORD.indexOf(rk.sugg)) { const step = TORD.indexOf(st.tier) - TORD.indexOf(rk.sugg), more = r.long * step * .1;
@@ -543,8 +586,9 @@ function renderAll() {
   let i6 = `<p class="s" style="margin-top:10px">比例都按全部金融资产 ${w(r.F)}算，剩下的 ${Math.round(r.tRest)}% 是现金和债券类。股票类默认 ${r.tStockDef}%，就是长钱里的 ${w(r.stock)}。</p>`;
   if (r.tGold > r.goldCapPct * 100 + .01) i6 += `<p class="warn">黄金 ${r.tGold}% 超过了你算出的上限 ${pc(r.goldCapPct)}。</p>`;
   if (r.tCrypto > r.cryptoCapPct * 100 + .01) i6 += `<p class="warn">加密资产 ${r.tCrypto}% 超过了你算出的上限 ${pc(r.cryptoCapPct, 1)}。</p>`;
+  if (r.tBad.length) { const TN = { tStock: '股票类', tGold: '黄金', tCrypto: '加密资产' }; i6 += `<p class="warn">比例要在 0 到 100% 之间：${r.tBad.map(k => `${TN[k]}填的是 ${n(st[k])}%，按 ${clamp(n(st[k]), 0, 100)}% 算`).join('；')}。</p>` }
   if (r.tRest < 0) i6 += `<p class="warn">加起来超过了 100%。</p>`;
-  if (has(st.tStock) && n(st.tStock) > r.tStockDef + .5 && ready) i6 += `<p class="warn">比按方法算出的 ${r.tStockDef}% 高。跌一半时会少 ${w(n(st.tStock) / 100 * r.F * .5)}，先确认自己拿得住。</p>`;
+  if (has(st.tStock) && r.tStock > r.tStockDef + .5 && ready) i6 += `<p class="warn">比按方法算出的 ${r.tStockDef}% 高。跌一半时会少 ${w(r.tStock / 100 * r.F * .5)}，先确认自己拿得住。</p>`;
   out('ips6', i6);
   const g = r.tGold, band = g > 0 ? `，黄金 ${Math.round(g * .8 * 10) / 10}% 到 ${Math.round(g * 1.2 * 10) / 10}%` : '';
   out('ips9', `每年 ${st.ipsMonth} 月检查一次。股票类在 ${Math.max(0, r.tStock - 5)}% 到 ${Math.min(100, r.tStock + 5)}% 之间不动${band}${r.tCrypto > 0 ? `，加密资产超过目标的 1.5 倍（${Math.round(r.tCrypto * 1.5 * 10) / 10}%）就卖回目标` : ''}；超出范围才再平衡，调回目标。资金顺序：新存下的钱 → 分红和利息 → 最后才卖出超配的部分。${ART('alloc-rebalance', '见《配置 07》')}`);
@@ -622,6 +666,7 @@ function renderReport(r, ready) {
   if (r.work > 0) { const ratio = bench > 0 ? mult / bench : 1;
     dims.long = { lvl: ratio >= 1 ? 0 : ratio >= .5 ? 1 : (r.age >= 40 ? 2 : 1), m: `收入的 ${x1(mult)}`, mm: `长期的钱 ${w(r.longTotal)}`,
       c: `长期的钱是收入的 ${x1(mult)}，${r.age} 岁的参照是 ${x1(bench)}`, fix: `按年龄参照，长期的钱还差 ${w(Math.max(0, bench * r.work - r.longTotal))}。` } }
+  else if (r.fiFree) dims.long = { lvl: 0, m: '被动收入够付支出', mm: `长期的钱 ${w(r.longTotal)}`, c: `不工作也有的收入 ${w(r.passive)}，已经够付以后每年的支出 ${w(r.expEx)}`, fix: '' };
   else dims.long = { lvl: r.prog >= 1 ? 0 : r.prog >= .5 ? 1 : 2, m: `财务自由数字的 ${pc(r.prog)}`, mm: `长期的钱 ${w(r.longTotal)}`, c: `长期的钱是财务自由数字的 ${pc(r.prog, 1)}`, fix: '支出和取钱的速度要放在一起看。' };
   const order = ['shield', 'em', 'debt', 'flow', 'long'];
   const scored = order.filter(k => dims[k].lvl !== null), worst = scored.length ? Math.max(...scored.map(k => dims[k].lvl)) : 0;
@@ -660,8 +705,8 @@ function renderReport(r, ready) {
   /* 3 阶段：只讲现在这一步，后面几步点开看 */
   const cd = [
     [r.surplus > 0 ? `去年结余 ${w(r.surplus)}` : `支出比收入多 ${w(-r.surplus)}`, r.H > 0 ? `还有 ${w(r.H)}：${r.high.map(d => `${esc(d.name)} ${w(d.bal)}（${d.rate}%）`).join('、')}` : '', M > 0 ? `流动性资产 ${w(r.L)}，够 ${mo(r.L / M)}` : ''],
-    [r.insGap ? r.miss.filter(x => x.lack.length).map(x => `${nm2(x.m)}缺${x.lack.map(k => INSN[k]).join('、')}`).join('；') : '', r.lowGap > .05 ? `活钱和稳钱还差 ${w(r.lowGap)}` : ''],
-    [`现在 ${w(r.longTotal)}，财务自由数字约 ${w(r.fi)}`], [`财务自由数字的 5 倍约 ${w(r.fi * 5)}`], []];
+    [r.insGap ? r.miss.filter(x => x.lack.length).map(x => `${nm2(x.m)}缺${x.lack.map(k => INSN[k]).join('、')}`).join('；') : (lifeGapSum + ciGapSum > .05 ? `保额还差${[lifeGapSum > .05 && `寿险约 ${w(lifeGapSum)}`, ciGapSum > .05 && `重疾险约 ${w(ciGapSum)}`].filter(Boolean).join('、')}` : ''), r.lowGap > .05 ? `活钱和稳钱还差 ${w(r.lowGap)}` : ''],
+    [r.fiFree ? `不工作也有的收入 ${w(r.passive)}，以后每年的支出 ${w(r.expEx)}` : `现在 ${w(r.longTotal)}，财务自由数字约 ${w(r.fi)}`], [`${r.fiFree ? '按以后每年的支出算，' : '财务自由数字的 '}5 倍约 ${w(r.fi5)}`], []];
   const S = r.stages, si = r.stage, cur = S[si], left = cur.conds.filter(c => !c[0]).length;
   const stageBody = i => { const s = S[i], isCur = i === si, done = i < si;
     return `${isCur ? '' : `<div class="lb">${done ? '已经做到' : '之后'} · 0${i + 1}</div><div class="c">${s.name}：${s.note}</div>`}
@@ -687,7 +732,7 @@ function renderReport(r, ready) {
       <dt>合理性检查</dt><dd>常用的粗略参照是 10 倍年收入，${w(o.inc * 10)}。${(() => { const k = o.inc > 0 ? o.lifeNeed / (o.inc * 10) : NaN; return !isFinite(k) ? '' : (k >= .5 && k <= 2 ? '算出来的数和它在同一个量级，合理。' : `算出来的是它的 ${Math.round(k * 10) / 10} 倍，相差较大，回头看看哪一项填得不对。`) })()}</dd>
       <dt>重疾险</dt><dd>年收入 ${w(o.inc)} × 70% × 3 年 + 医疗险报不到的 10 万 + 康复和照护 10 万 = <b>${w(o.ciNeed)}</b></dd></dl>
       <div class="fs no-print"><label class="f"><span>这个人不在了，家里每年还缺多少</span><em>默认：全家每年的支出（不算月供和一次性支出），减去他自己的开销，再减去其他家人收入的一半</em><div class="in"><input class="field" type="text" inputmode="decimal" data-list="members" data-i="${st.members.indexOf(o.m)}" data-f="gap" value="${esc(o.m.gap)}" placeholder="${Math.round(o.gapDef * 10) / 10}"><span class="u">万元 / 年</span></div></label>
-      <label class="f"><span>缺口要补几年</span><em>默认补到最小的孩子 22 岁</em><div class="in"><input class="field" type="text" inputmode="decimal" data-list="members" data-i="${st.members.indexOf(o.m)}" data-f="gapYears" value="${esc(o.m.gapYears)}" placeholder="${r.kidYears}"><span class="u">年</span></div></label></div>`).join('') + `<p class="s" style="margin-top:14px">系数假设这笔钱扣掉通胀后每年还有 1.5% 的回报。先保大人，先保障后储蓄。${ART('shield-amount', '方法见《保障 03》')}${st.members.some(m => m.role === 'elder') ? '老人一般配医保、惠民保，再看防癌医疗险和意外险。' : ''}${r.adults.some(m => n(m.income) <= 0) ? '没有收入的大人，寿险主要看家里要请人照顾孩子的费用，这里没有自动算。' : ''}</p>`)}`;
+      <label class="f"><span>缺口要补几年</span><em>默认补到最小的孩子 22 岁；没有孩子、但有人靠他的收入的，补到他退休那年</em><div class="in"><input class="field" type="text" inputmode="decimal" data-list="members" data-i="${st.members.indexOf(o.m)}" data-f="gapYears" value="${esc(o.m.gapYears)}" placeholder="${Math.round(o.yearsDef)}"><span class="u">年</span></div></label></div>`).join('') + `<p class="s" style="margin-top:14px">系数假设这笔钱扣掉通胀后每年还有 1.5% 的回报。先保大人，先保障后储蓄。${ART('shield-amount', '方法见《保障 03》')}${st.members.some(m => m.role === 'elder') ? '老人一般配医保、惠民保，再看防癌医疗险和意外险。' : ''}${r.adults.some(m => n(m.income) <= 0) ? '没有收入的大人，寿险主要看家里要请人照顾孩子的费用，这里没有自动算。' : ''}</p>`)}`;
   det.em = `${hd('em')}${gauge(emNow, Math.max(12, r.months + 1), [[r.months, `目标 ${r.months} 个月`]], [0, 3, 6, Math.max(12, r.months + 1)], x => x + ' 个月')}
     ${how('em', '怎么算的', `<p class="s">流动性资产 ${w(r.L)} ÷ 每月必需流出 ${w2(M)}。每月必需流出 = 必需支出 ${w2(r.needY / 12)}（含贷款月还款）${r.savPrem > 0 ? ` + 储蓄型保险的保费 ${w2(r.savPrem / 12)}` : ''}。目标月数按你选的「${r.T.name}」，${r.T.range.join(' 到 ')} 个月，现在取 ${r.months} 个月，可以在附录的「假设和可以调的数」里改。${r.er.length && r.tk !== 'cons' ? `你家有：${r.er.join('、')}，建议往保守那档靠，留 6 到 12 个月。` : ''}${ART('ledger-buckets', '见《账本 02》')}</p>${r.months < 3 ? `<p class="warn">你选了 ${mo(r.months)}：收入一旦中断，这笔钱只能撑 ${mo(r.months)}。想清楚这几个月够不够找到下一份收入。</p>` : ''}`)}`;
   det.debt = `${hd('debt')}${gauge((dr || 0) * 100, 60, [[30, '30% 留意'], [40, '40% 先处理']], [0, 20, 60], x => x + '%')}
@@ -705,16 +750,16 @@ function renderReport(r, ready) {
       <text x="${ax(60) + 10}" y="${ay(8) + 4}">参照</text>
       <circle cx="${ax(ma)}" cy="${ay(my)}" r="6.5" fill="var(--lilac)" stroke="var(--ink)" stroke-width="1.5"/>
       <text x="${ax(ma) + 12}" y="${ay(my) - 8}" style="fill:var(--ink)">你家 ${x1(my)}</text></svg>` };
-  const fiHit = s => { const x = s.rows.find(z => z.real >= r.fi && z.t > 0); return x ? x.age : null };
+  const fiHit = s => { if (!(r.fi > 0)) return null; const x = s.rows.find(z => z.real >= r.fi && z.t > 0); return x ? x.age : null };
   const atRet = s => s.rows.find(z => z.age === Math.round(s.retire)) || s.rows[s.rows.length - 1];
   const simHead = mid.broke ? `照现在的样子，${Math.round(mid.retire)} 岁时约 ${w(atRet(mid).real)}，中间情景 ${mid.broke} 岁左右用完` : `照现在的样子，${Math.round(mid.retire)} 岁时约 ${w(atRet(mid).real)}，中间情景够用到 ${lastAge} 岁`;
   det.long = `${hd('long')}${r.work > 0 ? benchSvg() : ''}
-    <p class="s">${r.work > 0 ? '参照来自美国 Fidelity 按年龄的储蓄倍数。' : ''}长期的钱 ${w(r.longTotal)}（长钱加受限资产），财务自由数字约 ${w(r.fi)}，现在是它的 ${pc(r.prog, 1)}${fiHit(mid) ? `，中间情景大约 ${fiHit(mid)} 岁达到` : ''}。</p>
+    <p class="s">${r.work > 0 ? '参照来自美国 Fidelity 按年龄的储蓄倍数。' : ''}长期的钱 ${w(r.longTotal)}（长钱加受限资产）${r.fiFree ? '。不工作也有的收入已经够付以后每年的支出，财务自由数字是 0' : `，财务自由数字约 ${w(r.fi)}，现在是它的 ${pc(r.prog, 1)}`}${fiHit(mid) ? `，中间情景大约 ${fiHit(mid)} 岁达到` : ''}。</p>
     <div class="c2">${simHead}</div>
     <div class="chart" data-chart role="img" aria-label="往后推到 ${lastAge} 岁，按今天的钱"></div>
     <div class="lgd"><span><i class="sw"></i>偏低到偏高</span><span><i class="ln"></i>中间情景</span><span><i class="rf"></i>财务自由数字</span><span>按今天的钱</span></div>
     ${how('long', '怎么算的', `<p class="s">财务自由数字 =（每年支出 ${w(r.expEx)}${r.payY > 0 || r.once > 0 ? `，不算${[r.payY > 0 && '贷款月还款', r.once > 0 && '过去一年的一次性支出'].filter(Boolean).join('和')}` : ''}${r.passive ? ` − 不工作也有的收入 ${w(r.passive)}` : ''}）÷ 每年取出 ${pc(r.wr, 1)}。${ART('ledger-goals', '见《账本 04》')}</p>
-      <p class="s" style="margin-top:8px">往后推：金融资产按问卷里每一项的预期年化加权，中间情景每年约 ${pc(mid.rp, 1)}，股票类再各低、高 2.5 个百分点画成范围带。受限资产按 ${R_RATE}% 单独算，退休前不能拿来付支出，退休那年并进来。生活支出按每年的涨幅涨；贷款月还款金额不变，还清就停；孩子的教育付到最小的孩子 22 岁；过去一年的一次性支出不往后算。借出去的钱${r.lentAmt > 0 && !r.lentBack ? '没填哪年收回，没有算进去' : '按填的年份收回'}。股权投资和房子没有算进去。${n(st.pension) ? '' : '养老金还没填，按 0 算，结果偏保守。'}逐年的数在附录。</p>`)}`;
+      <p class="s" style="margin-top:8px">往后推：金融资产按问卷里每一项的预期年化加权，中间情景每年约 ${pc(mid.rp, 1)}，股票类再各低、高 2.5 个百分点画成范围带。时间轴按${r.refAge !== r.age ? '主要收入者' : '大人'}的年龄排；每个人到自己的 ${r.retire} 岁才停工资，养老金从主要收入者退休那年开始领。受限资产按 ${R_RATE}% 单独算，退休前不能拿来付支出，退休那年并进来；储蓄型保费${has(st.ill.sav.premEnd) ? `交到 ${Math.round(n(st.ill.sav.premEnd))} 年` : '交到退休'}。生活支出按每年的涨幅涨；贷款月还款金额不变，还清就停；孩子的教育付到最小的孩子 22 岁；过去一年的一次性支出不往后算。借出去的钱${r.lentAmt > 0 && !r.lentBack ? '没填哪年收回，没有算进去' : '按填的年份收回'}。${r.lumpDebts.some(d => d.back) ? '没有月还款的负债，按填的年份连本带利一次还清。' : ''}${r.lumpNoYear.length ? `<b>${r.lumpNoYear.map(d => `${esc(d.name)} ${w(d.bal)}`).join('、')}没有月还款，也没填哪年还清，往后推里没算它。</b>` : ''}股权投资和房子没有算进去。${n(st.pension) ? '' : '养老金还没填，按 0 算，结果偏保守。'}逐年的数在附录。</p>`)}`;
   out('layers', `<h2 class="hl">${top ? `从地基往上看：「${LAYER[order.find(k => dims[k].lvl === worst)][0]}」要${worst === 2 ? '先补' : '留意'}` : '五层都稳'}</h2>
     <p class="hs">家庭财务分五层，从下往上，下面一层是上面一层的地基。点一层看细节。</p>
     <div class="pyr">${[...order].reverse().map(k => { const i = order.indexOf(k), dd = dims[k]; return `<button type="button" class="ly l${dd.lvl === null ? 0 : dd.lvl}${k === layerSel ? ' sel' : ''}" data-ly="${k}" style="width:${100 - i * 11}%"><span class="lb">0${i + 1}</span><span class="n">${LAYER[k][0]}</span><span class="m">${dd.m}</span>${tag(dd.lvl)}</button>` }).join('')}</div>
@@ -726,16 +771,23 @@ function renderReport(r, ready) {
   const shA = [['活钱', r.aL, 'sky'], ['先还的债', r.aH, 'grey'], ['稳钱', r.aS, 'pink'], ['长钱', r.long, 'mint']];
   const ha = r.short > .05 ? `金融资产还不够把应急金、还债和五年内要花的都备好，差 ${w(r.short)}` : r.lowGap > .05 ? `活钱和稳钱还少 ${w(r.lowGap)}，长钱多了 ${w(r.lowGap)}` : r.lowGap < -.05 ? `活钱和稳钱多了 ${w(-r.lowGap)}，可以慢慢挪进长钱` : '四个账户大体对上了';
   const uShare = r.F > 0 ? r.U / r.F : NaN;
+  const zeroCmp = () => { const inf = nv(st.infl, 2) / 100, k0 = R_RATE / 100, k1 = .9 * R_RATE / 100 + .1 * .053, real = k => Math.pow((1 + k) / (1 + inf), 20) - 1, L = Math.max(r.long, 0);
+    const say = x => `${x < 0 ? '少' : '多'} ${pc(Math.abs(x))}`;
+    return `<div class="rb" style="margin-top:28px"><div class="lb">两种放法对比</div><table class="mini">
+      <tr><td>长钱全部放稳健类</td><td>不会因为股市下跌少钱</td><td class="s">按 ${R_RATE}% 的年化、${pc(inf, 1)} 的通胀，20 年后的购买力大约${say(real(k0))}</td></tr>
+      <tr><td>放一成股票${L >= .05 ? `，约 ${w(L * .1)}` : ''}</td><td>股市跌一半时少${L >= .05 ? `约 ${w(L * .05)}` : '长钱的 5%'}</td><td class="s">长期年化约 ${pc(k1, 1)}，20 年后的购买力大约${say(real(k1))}</td></tr></table>
+      <p class="s" style="margin-top:10px">能接受放一成股票偶尔的下跌，可以在问卷里改成「保守」以外的回答，或者直接在投资政策书里填上股票类的比例。</p></div>` };
   out('alloc', `<h2 class="hl">${ha}</h2>
     <p class="hs">四个账户按什么时候要用来分：活钱管随时要用的，稳钱管五年内已经知道要花的，长钱管五年以上用不到的。金融资产 ${w(r.F)}，现在和该有的对着看：</p>
     <div class="hb"><div class="k">现在</div><div class="r">${seg(nowA, r.F)}</div><div class="k">该有</div><div class="r">${seg(shA, r.F)}</div></div>
     ${legend([['活钱 · 流动性资产', 1, 'sky', 0, `该有 ${w(r.E)} / 现在 ${w(r.L)}`], ['稳钱 · 稳健类', 1, 'pink', 0, `该有 ${w(r.W)} / 现在 ${w(r.S)}`], ['长钱 · 股票类等', 1, 'mint', 0, `该有 ${w(r.long)} / 现在 ${w(r.nowLong)}`], ...(r.H > 0 ? [['先还的债', 1, 'grey', 0, w(r.H)]] : [])])}
     <table class="mini" style="margin-top:28px">
-      <tr><td>长钱里放股票</td><td>${r.s}%${r.long >= .05 ? `，约 ${w(r.stock)}` : ''}</td><td class="s">100 − ${r.age} 岁${r.T.adj ? `，「${r.T.name}」${r.T.adj > 0 ? '+' : '−'}${Math.abs(r.T.adj)}` : '，标准档不加减'}</td></tr>
+      <tr><td>长钱里放股票</td><td>${r.s}%${r.long >= .05 ? `，约 ${w(r.stock)}` : ''}</td><td class="s">${r.zero ? '你选了「一分都不能亏」，按不放股票算' : `100 − ${r.age} 岁${r.T.adj ? `，「${r.T.name}」${r.T.adj > 0 ? '+' : '−'}${Math.abs(r.T.adj)}` : '，标准档不加减'}`}</td></tr>
       <tr><td>黄金</td><td>最多 ${w(r.goldCap)}</td><td class="s">现在 ${w(r.G)}${r.G > r.goldCap + .05 ? '，超过了' : ''}</td></tr>
       <tr><td>加密资产</td><td>最多 ${w(r.cryptoCap)}</td><td class="s">现在 ${w(r.X)}${r.X > r.cryptoCap + .05 ? '，超过了' : ''}</td></tr>
       <tr><td>美元</td><td>${r.hasBills ? `至少 ${w(r.usdLow)}` : '没有下限'}</td><td class="s">现在 ${w(r.U)}${isFinite(uShare) ? `，占 ${pc(uShare)}` : ''}</td></tr>
     </table>
+    ${r.zero ? zeroCmp() : ''}
     <div class="rb" style="margin-top:44px"><div class="lb">如果坏事发生</div><div class="stress">
       <div><div class="l">收入断了</div><div class="n">撑 ${mo(emNow)}</div><div class="d">靠流动性资产</div></div>
       <div><div class="l">股市跌一半</div><div class="n">少 ${w(r.K * .5)}</div><div class="d">${r.K > 0 && M > 0 ? `相当于 ${mo(r.K * .5 / M)}的必需流出` : '现在没有股票类'}</div></div>
@@ -766,7 +818,7 @@ function renderReport(r, ready) {
   if (insLater.length) later.push(['保障', `补齐保额：${insLater.map(o => { const m2 = r.miss.find(x => x.m === o.m).lack; const p = [(o.lifeGap || 0) > .05 && !(earnerLack.some(x => x.m === o.m) && m2.includes('sx')) && `寿险约 <b>${w(o.lifeGap)}</b>`, (o.ciGap || 0) > .05 && !(earnerLack.some(x => x.m === o.m) && m2.includes('zj')) && `重疾险约 <b>${w(o.ciGap)}</b>`].filter(Boolean); return p.length ? `${nm2(o.m)}${p.join('、')}` : '' }).filter(Boolean).join('；')}。`]);
   if (r.L > r.E + .05) later.push(['活钱', `活期和货币基金比应急金多 ${w(r.L - r.E)}，可以挪去稳钱或长钱。`]);
   if (r.W > 0) later.push(['稳钱', `五年内要花的 <b>${w(r.W)}</b>，按用钱的年份放进对应到期的定期或国债。`]);
-  if (r.short > .05) later.push(['长钱', `金融资产还差 <b>${w(r.short)}</b>才能把前面几样备好。${r.nowLong > 0 ? '股票类不必马上卖，在用钱之前一两年分几次挪过来。' : ''}${r.surplus > 0 ? `按每年存下 ${w(r.saveTot)}算，大约 ${Math.ceil(r.short / Math.max(.1, r.saveTot) * 10) / 10} 年能补齐。` : ''}`]);
+  if (r.short > .05) later.push(['长钱', `金融资产还差 <b>${w(r.short)}</b>才能把前面几样备好。${r.nowLong > 0 ? '股票类不必马上卖，在用钱之前一两年分几次挪过来。' : ''}${(() => { const y = fillYears(r, r.short); return y ? `按每年能自由支配的结余 ${w(r.freeSave)}${r.debts.length ? '（贷款还清以后，腾出来的月还款也算进来）' : ''}，大约 ${y} 年能补齐。` : '现在每年能自由支配的结余不够补上它，先从可以停的支出里腾出一点。' })()}`]);
   else if (r.lowGap > .05) later.push(['长钱', '先停新的投资；股票类里离用钱最近的部分，在用钱前一两年分几次挪回稳钱。']);
   else if (r.long > .05) later.push(['长钱', `长钱 <b>${w(r.long)}</b>里放 ${r.s}% 股票，分几个月投出去。${ART('alloc-ratio', '比例怎么定')}`]);
   if (r.mid.length) later.push(['负债', `${r.mid.map(d => `${esc(d.name)}（${d.rate}%）`).join('、')}的利率在 3% 到 6% 之间，不挡在稳钱前面，最好一两年内还掉。`]);
@@ -918,6 +970,8 @@ D.addEventListener('click', e => {
   const go = e.target.closest('[data-go]'); if (go) { e.preventDefault(); showMod(+go.dataset.go, true); return }
   const a = e.target.closest('[data-addrow]'); if (a) { const nm = a.dataset.addrow; st[nm].push(LISTS[nm].add()); renderList(nm); if (nm === 'members') { renderIncTable(); renderInsTable() } save(); render(); const inp = a.parentNode.querySelector('tbody tr:last-child .field'); inp && inp.focus(); return }
   const af = e.target.closest('[data-addfx]'); if (af) { const g = af.dataset.addfx, k = 'u' + Date.now().toString(36); st[g][k] = { custom: 1, name: '', ...(af.dataset.sg ? { sg: af.dataset.sg } : {}) }; renderFixed(g); save(); render(); const inp = D.querySelector(`[data-g="${g}"][data-row="${k}"][data-f="name"]`); inp && inp.focus(); return }
+  const ua = e.target.closest('[data-unauto]'); if (ua) { e.preventDefault(); const [g, k] = ua.dataset.unauto.split('|'); st[g][k].amt = ''; const inp = D.querySelector(`[data-g="${g}"][data-row="${k}"][data-f="amt"]`); if (inp) inp.value = ''; save(); render(); return }
+  const uk = e.target.closest('[data-unautok]'); if (uk) { e.preventDefault(); const k = uk.dataset.unautok; st[k] = ''; const inp = D.querySelector(`[data-k="${k}"]`); if (inp) inp.value = ''; save(); render(); return }
   const df = e.target.closest('[data-delfx]'); if (df) { delete st[df.dataset.delfx][df.dataset.row]; renderFixed(df.dataset.delfx); save(); render(); return }
   const d = e.target.closest('[data-del]'); if (d) { st[d.dataset.del].splice(+d.dataset.i, 1); renderList(d.dataset.del); if (d.dataset.del === 'members') { renderIncTable(); renderInsTable() } save(); render(); return }
   const b = e.target.closest('[data-act]'); if (!b) return;
@@ -955,7 +1009,7 @@ function toMd() {
     `- 每年收入 ${w(r.inc)}（其中利息和理财收益 ${w2(r.interest)}，资产带来的收入 ${w2(r.assetInc)}），支出 ${w(r.exp)}（其中贷款月还款 ${w(r.payY)}），结余 ${w(r.surplus)}${r.savPrem ? `（其中储蓄型保费 ${w2(r.savPrem)}）` : ''}；还掉的贷款本金约 ${w(r.principal)}；储蓄率 ${pc(r.saveR)}，自由储蓄率 ${pc(r.freeR)}；每月必需流出 ${w2(r.M)}`,
     `- 计划：${nv(st.retire, 60)} 岁退休，养老金每年 ${has(st.pension) ? n(st.pension) : '未填'}；${r.plans.map(p => `${p.year} 年起 ${p.item || USEN[p.use]}（${USEN[p.use]}）${p.amt}（${{ once: '一次性', exp: `每年支出，${p.years} 年`, inc: `每年收入，${p.years} 年` }[p.kind]}${p.sure === '0' ? '，还不确定' : ''}）`).join('；') || '没有其他大事'}`,
     `- 投资偏好：${r.risk.done ? `四道题 ${r.risk.score} 分，建议「${TIER[r.risk.sugg].name}」` : '没答完'}${st.tier ? `，自己选了「${r.T.name}」` : ''}`);
-  L.push('', '## 阶段', `- 现在在「${r.stages[r.stage].name}」；长期的钱 ${w(r.longTotal)}，财务自由数字 ${w(r.fi)}（${pc(r.prog, 1)}）`);
+  L.push('', '## 阶段', `- 现在在「${r.stages[r.stage].name}」；长期的钱 ${w(r.longTotal)}，${r.fiFree ? '不工作也有的收入已经够付每年的支出' : `财务自由数字 ${w(r.fi)}（${pc(r.prog, 1)}）`}`);
   L.push('', '## 保障', ...r.ins.filter(o => o.lifeNeed !== undefined).map(o => `- ${o.m.name}：寿险需要 ${w(o.lifeNeed)}，已有 ${w(n(o.m.life))}；重疾需要 ${w(o.ciNeed)}，已有 ${w(n(o.m.ci))}`));
   if (r.insGap) L.push(`- 还缺的险种：${r.miss.filter(x => x.lack.length).map(x => `${x.m.name} ${x.lack.map(k => INSN[k]).join('、')}`).join('；')}`);
   L.push('', '## 配置', `- 类型：${r.T.name}；按 ${r.age} 岁算`, `- 四个账户：活钱 ${w(r.E)}（${r.months} 个月），稳钱 ${w(r.W)}，长钱 ${w(r.long)}${r.H ? `；先还高息负债 ${w(r.H)}` : ''}`,
