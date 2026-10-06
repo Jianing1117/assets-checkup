@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-**填一次家底，拿到一份体检报告和一页家庭投资政策书。不用注册，数据只存在你自己的浏览器里，不推荐任何产品。**
+**填写一份家庭财务体检问卷，彻底了解财务健康状态，再拿到一页家庭投资政策书。不用注册，数据只存在你自己的浏览器里，不推荐任何产品。**
 
 在线使用：**[longarcsociety.com/tools/checkup](https://longarcsociety.com/tools/checkup)**
 

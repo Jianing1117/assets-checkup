@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-**Fill in your household finances once. Get a checkup report and a one-page family Investment Policy Statement. No sign-up, nothing leaves your browser, no products for sale.**
+**Fill in one household financial checkup questionnaire, get a clear picture of your family's financial health, plus a one-page family Investment Policy Statement. No sign-up, nothing leaves your browser, no products for sale.**
 
 Try it: **[longarcsociety.com/tools/checkup](https://longarcsociety.com/tools/checkup)** (Chinese interface)
 
